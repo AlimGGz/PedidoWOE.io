@@ -64,6 +64,39 @@
 .weight-explanation{background:#f1f7ee;border:1px solid #d5e8d2;border-radius:10px;color:#46654f;font-size:11.5px;line-height:1.7;padding:12px 14px;margin:13px 0 0}
 .weight-explanation strong,.weight-explanation b{color:#215338}
 
+
+/* v4 · Tabla fija, ordenamiento, control de revisión, unidades y pedidos en tránsito */
+.version-mark{display:inline-block;margin-left:12px;color:#93aa98;letter-spacing:.04em;font-size:10px;font-variant-numeric:tabular-nums}
+.optional-label{font-size:10px;font-weight:650;color:#7e9786;background:#f0f5ef;border-radius:6px;padding:4px 8px;vertical-align:middle;margin-left:7px}
+.transit-content{border:1px solid #e1eae0;background:#fff;border-radius:12px;padding:15px;margin:12px 0 24px}
+.transit-upload-row{display:grid;grid-template-columns:minmax(200px,1.1fr) minmax(200px,1fr);gap:12px;align-items:center}
+.transit-upload{display:block;border:1px dashed #8eb69b;border-radius:10px;background:#f7fbf5;padding:14px 16px;cursor:pointer;color:#176044;font-size:12px}
+.transit-upload strong,.transit-upload small{display:block}.transit-upload small{margin-top:5px;line-height:1.5;color:#77927e;font-size:10px;font-weight:400}
+.transit-help{font-size:11px;line-height:1.5;color:#829688}
+.transit-manual{display:grid;grid-template-columns:minmax(220px,2fr) minmax(130px,1fr) minmax(110px,.7fr) auto;gap:12px;align-items:end;margin-top:16px}
+.transit-manual label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#5b7b63;font-weight:700}
+.transit-manual input,.transit-manual select{width:100%;height:38px;background:#fff;border:1px solid #dce5da;border-radius:8px;padding:0 9px;color:#315b41;font-size:12px}
+.transit-summary{color:#5c8064;font-size:11px;margin:15px 0 8px;line-height:1.6}
+.transit-table{max-height:300px;overflow:auto}.transit-table table{min-width:720px}
+.transit-table th{position:sticky;top:0;background:#f4f8f3;z-index:2}
+.order-scroll{max-height:min(66vh,740px);overflow:auto;overscroll-behavior:contain}
+#mainTable{min-width:1090px}
+#mainTable thead th{position:sticky;top:0;z-index:3;background:#f4f8f3;box-shadow:inset 0 -1px #d9e7db}
+#mainTable th[data-sort]{cursor:pointer;user-select:none;transition:background .15s}
+#mainTable th[data-sort]:hover{background:#e8f3e8;color:#1e6140}
+#mainTable th[data-sort]::after{content:' ↕';opacity:.35;letter-spacing:0;font-size:11px}
+#mainTable th[data-sort][aria-sort=ascending]::after{content:' ↑';opacity:1;color:#006241}
+#mainTable th[data-sort][aria-sort=descending]::after{content:' ↓';opacity:1;color:#006241}
+.review-btn{display:inline-flex;align-items:center;justify-content:center;min-width:80px;font-size:10px;font-weight:740;color:#9a6c33;background:#fffaf3;border:1px solid #ead9c1;border-radius:8px;padding:7px 8px;white-space:nowrap}
+.review-btn.done{color:#086546;background:#e4f3e9;border-color:#8bbb9f}
+.review-btn:disabled{color:#a9b3a9;background:#fafbf9;border-color:#e0e6df;cursor:not-allowed}
+.status-chip.reviewed{color:#087045}.status-chip.provisional{color:#a47745}
+.order-provisional{color:#996539;font-weight:750}.order-provisional small{font-weight:500;font-size:9px;display:block;color:#ad957c}
+.inbound-count{font-weight:790;color:#267d55}.inbound-none{color:#a2ada6}
+.drawer-form select{width:100%;min-height:40px;background:#fff;border:1px solid #d7e3d8;border-radius:8px;color:#225239;padding:0 8px;margin-top:7px}
+@media(max-width:900px){.transit-manual{grid-template-columns:1fr 1fr}.transit-manual button{align-self:end}.transit-upload-row{grid-template-columns:1fr}}
+@media(max-width:580px){.transit-manual{grid-template-columns:1fr 1fr}.transit-manual label:first-child{grid-column:1/-1}.order-scroll{max-height:62vh}}
+@media print{.order-scroll{max-height:none;overflow:visible}.data-table thead th{position:static!important}.transit-content,.optional-label,#transitSection,.review-btn{display:none!important}#mainTable{min-width:0}}
 </style>
 </head>
 <body>
@@ -100,22 +133,30 @@
 <label>Pedido que deseas calcular <small>Elige una fecha de entrega</small><select aria-label="Fecha de recepción a calcular" id="receiptDate"></select></label>
 </div>
 <div class="calendar-grid secondary-grid"><label>Días de seguridad <small>Stock extra después de la siguiente entrega</small><input id="safetyDays" max="30" min="0" step="1" type="number" value="0"/></label><label>Importancia del consumo reciente <small>Últimos 7 días (%) · Por defecto 70%</small><input id="recentWeight" max="100" min="0" step="5" type="number" value="70"/></label><div class="calendar-summary" id="calendarSummary">Selecciona al menos un día de recepción.</div></div>
-<p class="weight-explanation" id="weightExplanation" aria-live="polite">El uso diario combina 70% del promedio de los últimos 7 días y 30% del promedio de los últimos 28 días. Ejemplo: si recientemente gastas 6 piezas/día y el promedio de 28 días fue 4, el cálculo estimará 5.4 piezas/día. <strong>Solo cambia las estimaciones del Motor 02; no modifica los consumos manuales.</strong></p>
+<p class="weight-explanation" id="weightExplanation" aria-live="polite">El pronóstico combina 70% del promedio de los últimos 7 días y 30% del de los últimos 28 días. No modifica los consumos manuales.</p>
 <p class="formula-note"><strong>Modelo:</strong> stock estimado a la recepción = stock del conteo − consumo diario × días transcurridos + recepciones en tránsito. Pedido = consumo diario × días hasta la siguiente recepción (+ seguridad) − stock estimado, redondeado al múltiplo de compra. No presume entregas anteriores que no se hayan registrado.</p>
-</section><section class="example-wrap" id="examplePanel"><div class="section-bar compact"><div><h2>Ejemplo · Pastel de chocolate</h2><p>Demostración sin stock de seguridad · 12 piezas disponibles · uso diario 4.8 piezas</p></div></div><div class="example-grid" id="exampleResult"></div></section>
+</section>
+<section class="data-section" id="transitSection">
+<div class="section-bar"><div><h2>3. Artículos en tránsito <span class="optional-label">Opcional</span></h2><p>Sube órdenes de proveedor en PDF o registra artículos pendientes de recibir. Se descuentan únicamente si su fecha de entrega es posterior al conteo y no posterior a la recepción seleccionada.</p></div><button class="text-btn" id="toggleTransit" type="button">Mostrar tránsito ⌄</button></div>
+<div class="transit-content hidden" id="transitContent">
+<div class="transit-upload-row"><label class="transit-upload"><strong>↥ Cargar PDF de pedido del proveedor</strong><small>Lee NºMaterial Cliente (SAP), cantidad, CAJ/BTE y fecha de entrega. No publica el documento.</small><input id="transitInput" type="file" accept=".pdf" multiple hidden /></label><div class="transit-help">Las cajas se convierten a piezas a partir de la presentación escrita en el PDF (p. ej. CJ12 = 12 piezas). Si falta esa información, el artículo queda por validar.</div></div>
+<div class="transit-manual"><label>Artículo del inventario <select id="transitManualSap"><option value="">Selecciona SAP...</option></select></label><label>Entrega prevista <input id="transitManualDate" type="date" /></label><label>Cantidad (PZA) <input id="transitManualQty" type="number" min="0.001" step="any" placeholder="0" /></label><button class="btn ghost" id="addTransitManual" type="button">+ Agregar tránsito</button></div>
+<div class="transit-summary" id="transitSummary">No hay artículos en tránsito registrados.</div>
+<div class="table-scroll transit-table"><table class="data-table"><thead><tr><th>DOCUMENTO / ENTREGA</th><th>ARTÍCULO · SAP CLIENTE</th><th class="num">CANTIDAD ORIG.</th><th class="num">PIEZAS</th><th>APLICACIÓN</th><th></th></tr></thead><tbody id="transitBody"></tbody></table></div>
+</div></section>
 <section class="view" id="view-pedido">
-<div class="section-bar"><div><h2>Propuesta de pedido</h2><p>Pedido calculado para la fecha de recepción seleccionada, hasta la siguiente entrega programada.</p></div><div class="small-caption" id="tableCount"></div></div>
-<div class="filters"><div class="search-wrap"><span>⌕</span><input autocomplete="off" id="searchInput" placeholder="Buscar por SAP, artículo o ID de uso…" type="search"/></div><select aria-label="Familia de producto" id="familyFilter"><option value="">Todas las familias</option></select><select aria-label="Filtrar estado" id="statusFilter"><option value="">Todos los estados</option><option value="pedido">Con pedido sugerido</option><option value="listo">Listos</option><option value="pendiente">Requieren revisión</option><option value="manual">Sin consumo de motor</option></select></div>
-<div class="table-scroll"><table class="data-table" id="mainTable"><thead><tr><th>ARTÍCULO · SAP</th><th>TIPO DE USO</th><th class="num">STOCK INICIAL</th><th class="num">AL RECIBIR</th><th class="num">USO/DÍA</th><th class="num">COBERTURA</th><th class="num">PEDIR</th><th>ESTADO</th><th></th></tr></thead><tbody id="mainBody"></tbody></table></div>
+<div class="section-bar"><div><h2>Propuesta de pedido</h2><p>Pedido para la fecha seleccionada. *Revisado indica revisión visual, no necesariamente conciliación validada.</p></div><div class="small-caption" id="tableCount"></div></div>
+<div class="filters"><div class="search-wrap"><span>⌕</span><input autocomplete="off" id="searchInput" placeholder="Buscar por SAP, artículo o ID de uso…" type="search"/></div><select aria-label="Familia de producto" id="familyFilter"><option value="">Todas las familias</option></select><select aria-label="Filtrar estado" id="statusFilter"><option value="">Todos los estados</option><option value="pedido">Con pedido sugerido</option><option value="listo">Listos</option><option value="pendiente">Requieren revisión</option><option value="revisado">Revisión terminada</option><option value="manual">Sin consumo de motor</option></select></div>
+<div class="table-scroll order-scroll" id="orderScroll"><table class="data-table" id="mainTable"><thead><tr><th data-sort="name">ARTÍCULO · SAP</th><th data-sort="source">TIPO DE USO</th><th data-sort="stock" class="num">STOCK INICIAL</th><th data-sort="inbound" class="num">EN TRÁNSITO</th><th data-sort="position" class="num">AL RECIBIR</th><th data-sort="daily" class="num">USO/DÍA</th><th data-sort="coverage" class="num">COBERTURA</th><th data-sort="order" class="num">PEDIR</th><th data-sort="status">ESTADO</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="mainBody"></tbody></table></div>
 </section>
 <section class="view hidden" id="view-niveles"><div class="section-bar"><div><h2>Máximos y mínimos</h2><p>Máximos y mínimos ajustados a tu calendario de recepción.</p></div></div><div class="filters"><div class="search-wrap"><span>⌕</span><input id="levelSearch" placeholder="Buscar artículo o SAP…" type="search"/></div><select id="levelFilter"><option value="">Todas las familias</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>ARTÍCULO · SAP</th><th class="num">USO/DÍA</th><th class="num">MÍNIMO</th><th class="num">MÁXIMO</th><th class="num">STOCK</th><th class="num">DÍAS</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="levelsBody"></tbody></table></div></section>
 <section class="view hidden" id="view-tendencia"><div class="section-bar"><div><h2>Evolución del consumo</h2><p>Uso ideal diario del Motor 02. La tendencia de ventas aparece como contexto, no como consumo de inventario.</p></div></div><div class="trend-panel"><div class="trend-select"><label>Artículo a analizar</label><select id="trendItemSelect"></select></div><div class="trend-metrics"><div><span>Promedio 7 días</span><strong id="trendRecent">—</strong></div><div><span>Promedio anterior</span><strong id="trendPrevious">—</strong></div><div><span>Variación</span><strong id="trendChange">—</strong></div><div><span>Días con registros</span><strong id="trendDays">—</strong></div></div><div class="chart-area" id="chartArea"><div class="empty-chart">Selecciona un artículo con historial de uso.</div></div><div class="trend-notes" id="trendNotes"></div></div><div class="section-bar chart-section"><div><h2>Contexto de operación</h2><p>Transacciones y actividad del Motor 01, más referencias de venta del Motor 03.</p></div></div><div class="context-grid"><div class="context-box"><span>Transacciones · último día disponible</span><strong id="lastTransactions">—</strong><small id="lastTransactionsDay"></small></div><div class="context-box"><span>Venta neta · último día disponible</span><strong id="lastSales">—</strong><small>Motor 01 · fuente de contexto</small></div><div class="context-box"><span>Renglones de productos · Motor 03</span><strong id="posLines">—</strong><small>Registros consolidados por producto y día</small></div></div></section>
 <section class="view hidden" id="view-conciliacion"><div class="section-bar"><div><h2>Conciliación de catálogos</h2><p>SAP del inventario ≠ IDArticulo del Motor 02. Confirma enlaces antes de hacer un pedido definitivo.</p></div><button class="btn ghost" id="bulkConfirm">✓ Confirmar coincidencias seguras</button></div><div class="notice">Se pueden consultar sugerencias por similitud de nombre, pero **no se equiparan códigos diferentes**. Las unidades de uso que no se puedan convertir requieren captura manual.</div><div class="table-scroll"><table class="data-table"><thead><tr><th>INVENTARIO SAP</th><th>SUGERENCIA DE USO</th><th class="num">CONFIANZA</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead><tbody id="reconcileBody"></tbody></table></div></section>
-<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial.</footer>
+<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial. <span class="version-mark">v4.0.0</span></footer>
 </div>
 </main>
 </div>
-<div class="modal-overlay hidden" id="detailOverlay"><div aria-labelledby="detailTitle" aria-modal="true" class="drawer" role="dialog"><div class="drawer-header"><div><div class="eyebrow">REVISIÓN DEL ARTÍCULO</div><h2 id="detailTitle">Artículo</h2><p id="detailSubtitle"></p></div><button aria-label="Cerrar" class="close-btn" id="closeDetail">×</button></div><div class="drawer-scroll"><div class="mini-card" id="detailSource"></div><div class="drawer-form"><label>ID de consumo (Motor 02) <small>No es el código SAP ni el ID de stock.</small><select id="editUsageId"></select></label><label>Buscar posible artículo de uso<input id="usageSearch" placeholder="Filtrar opciones por nombre o ID" type="search"/></label><div class="two-cols"><label>Stock inicial validado <small id="stockUnitLabel">Unidad del PDF</small><input id="editStock" min="0" placeholder="Pendiente" step="any" type="number"/></label><label>Recepciones en tránsito <small>En la misma unidad</small><input id="editInbound" min="0" step="any" type="number"/></label></div><div class="two-cols"><label>Consumo diario manual <small>Dejar vacío para usar el motor</small><input id="editManual" min="0" placeholder="Usar motor" step="any" type="number"/></label><label>Conversión motor → stock <small id="conversionHint">Unidades por cada unidad del motor</small><input id="editFactor" min="0.000001" placeholder="Por validar" step="any" type="number"/></label></div><div class="two-cols"><label>Múltiplo del pedido <small id="multipleHint">Predeterminado: unidades sueltas</small><input id="editMultiple" min="0.001" step="any" type="number"/></label><label>Motivo / observaciones <small>Información interna opcional</small><input id="editNote" placeholder="Ej. campaña o evento especial" type="text"/></label></div><label class="check-label"><input id="editConfirmed" type="checkbox"/> Confirmo que el ID del motor corresponde a este producto SAP</label><label class="check-label" id="stockVerifiedWrap"><input id="editStockVerified" type="checkbox"/> Verifiqué el stock convertido a la unidad de inventario (kg o litros)</label><div class="soft-warning" id="detailWarnings"></div><div class="calculation" id="detailMath"></div></div></div><div class="drawer-footer"><button class="btn ghost" id="clearDetail">Restaurar este artículo</button><button class="btn primary" id="saveDetail">Guardar cambios</button></div></div></div>
+<div class="modal-overlay hidden" id="detailOverlay"><div aria-labelledby="detailTitle" aria-modal="true" class="drawer" role="dialog"><div class="drawer-header"><div><div class="eyebrow">REVISIÓN DEL ARTÍCULO</div><h2 id="detailTitle">Artículo</h2><p id="detailSubtitle"></p></div><button aria-label="Cerrar" class="close-btn" id="closeDetail">×</button></div><div class="drawer-scroll"><div class="mini-card" id="detailSource"></div><div class="drawer-form"><label>ID de consumo (Motor 02) <small>Vincula el consumo; por defecto, todas las cantidades están en PZA.</small><select id="editUsageId"></select></label><label>Buscar posible artículo de uso<input id="usageSearch" placeholder="Filtrar opciones por nombre o ID" type="search"/></label><div class="two-cols"><label>Unidad de trabajo <small>Predeterminada: piezas (PZA)</small><select id="editUnit"><option value="PZA">Piezas (PZA)</option><option value="UND">Unidades (UND)</option><option value="KG">Kilogramos (KG)</option><option value="L">Litros (L)</option></select></label><label>Stock inicial validado <small id="stockUnitLabel">PZA · 0 está permitido</small><input id="editStock" min="0" placeholder="Pendiente" step="any" type="number"/></label></div><div class="two-cols"><label>Tránsito manual adicional <small id="editInboundUnit">Adicional al PDF, en PZA</small><input id="editInbound" min="0" step="any" type="number"/></label><label>Equivalencia para tránsito <small id="pieceConversionHint">Unidades de trabajo por 1 pieza, cuando no uses PZA</small><input id="editPieceFactor" min="0.000001" step="any" type="number" placeholder="1" /></label></div><div class="two-cols"><label>Consumo diario manual <small>Dejar vacío para usar el motor</small><input id="editManual" min="0" placeholder="Usar motor" step="any" type="number"/></label><label>Conversión motor → stock <small id="conversionHint">Unidades por cada unidad del motor</small><input id="editFactor" min="0.000001" placeholder="Por validar" step="any" type="number"/></label></div><div class="two-cols"><label>Múltiplo del pedido <small id="multipleHint">Predeterminado: unidades sueltas</small><input id="editMultiple" min="0.001" step="any" type="number"/></label><label>Motivo / observaciones <small>Información interna opcional</small><input id="editNote" placeholder="Ej. campaña o evento especial" type="text"/></label></div><label class="check-label"><input id="editConfirmed" type="checkbox"/> Confirmo que el ID del motor corresponde a este producto SAP</label><label class="check-label" id="stockVerifiedWrap"><input id="editStockVerified" type="checkbox"/> Validé el stock y la conversión para este artículo</label><div class="soft-warning" id="detailWarnings"></div><div class="calculation" id="detailMath"></div></div></div><div class="drawer-footer"><button class="btn ghost" id="clearDetail">Restaurar este artículo</button><button class="btn primary" id="saveDetail">Guardar cambios</button></div></div></div>
 <div aria-live="polite" class="toast" id="toast"></div>
 <script>
 /*!
@@ -167,14 +208,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const format=(v,dec=2)=>v==null||!Number.isFinite(v)?'—':new Intl.NumberFormat('es-MX',{minimumFractionDigits:0,maximumFractionDigits:dec}).format(v);
   const norm=(s)=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
   const round=(qty,unit)=>['PZA','UND','ST'].includes(unit)?Math.ceil(qty-1e-9):Math.ceil(qty*1000-1e-9)/1000;
+  function selectedUnit(item,override){return ['PZA','UND','KG','L'].includes(override?.unit)?override.unit:'PZA';}
   function stockFromPdf(item,override){
     if(override&&override.stock!==undefined&&override.stock!==null&&override.stock!=='')return Math.max(0,num(override.stock,0));
+    const target=selectedUnit(item,override),source=String(item.unit||'PZA').toUpperCase();
     const pieces=num(item.pieces,0),bulk=num(item.bulk,0);
-    if(['PZA','UND','ST'].includes(item.unit))return pieces;
-    // El PDF no informa cómo convertir cajas a kg/L. Si hay dos cantidades,
-    // NO sumamos números de unidades físicas diferentes.
-    if(pieces>0&&bulk>0)return null;
-    return Math.max(0,pieces||bulk);
+    if(['PZA','UND','ST'].includes(source)&&['PZA','UND'].includes(target))return Math.max(0,pieces);
+    if(source===target&&['KG','L'].includes(source)&&pieces>0&&bulk>0)return null;
+    if(source===target&&['KG','L'].includes(source))return Math.max(0,pieces||bulk);
+    // Un conteo en kg/L no se transforma silenciosamente en piezas, sobre todo
+    // si contiene parte de un envase o su columna "PIEZAS" es fraccionaria.
+    if(['PZA','UND'].includes(target)&&['KG','L'].includes(source)){
+      if(bulk>0||Math.abs(pieces-Math.round(pieces))>1e-7)return null;
+      return Math.max(0,pieces);
+    }
+    return null;
   }
   function unitFactor(stockUnit, motorUnit){
     const u=String(motorUnit||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase(); const prefix=String(motorUnit||'').split(':')[0].toUpperCase();
@@ -239,21 +287,43 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const w=Math.max(0,Math.min(1,num(data?._recentWeight,70)/100));
     return {valid:true,series,recent,previous,historical,forecast:w*recent+(1-w)*historical,daysObserved:obs.size,units:[...unitSet],first,last};
   }
+  function transitFor(item,state,override,unit,receipt,snapshot){
+    let pieces=0;const pending=[];let applicable=0;
+    for(const doc of state.data.transitDocs||[]){
+      if(!doc.deliveryDate||!receipt||!snapshot)continue;
+      if(doc.deliveryDate<=snapshot||doc.deliveryDate>receipt)continue;
+      for(const line of doc.rows||[]){
+        if(String(line.sap)!==String(item.sap))continue;
+        if(line.pieces===null||!Number.isFinite(Number(line.pieces))){pending.push(doc.orderNumber+' · conversión de '+line.supplierUnit+' pendiente');continue;}
+        pieces+=Math.max(0,Number(line.pieces));applicable++;
+      }
+    }
+    if(!pieces)return {qty:0,pieces,applicable,pending};
+    if(['PZA','UND'].includes(unit))return {qty:pieces,pieces,applicable,pending};
+    const pFactor=n(override.pieceFactor,null);
+    if(!(pFactor>0)){pending.push('Indica equivalencia entre pieza y '+unit+' para tránsito');return {qty:0,pieces,applicable,pending};}
+    return {qty:pieces*pFactor,pieces,applicable,pending};
+  }
   function derive(item, state, usageIndex){
     const cfg={...DEFAULTS,...state.settings};const o=state.overrides?.[item.sap]||{};
+    const unit=selectedUnit(item,o),workingItem={...item,unit};
     const linkId=(o.usageId!==undefined)?String(o.usageId||''):String(item.autoLink||'');
     const manual=o.manual!==undefined&&o.manual!==null&&o.manual!=='';
-    const stock=stockFromPdf(item,o),inbound=Math.max(0,num(o.inbound,0));
+    const stock=stockFromPdf(item,o);
+    const receipt=cleanDate(cfg.receiptDate),snapshot=cleanDate(state.data.inventoryDate);
+    const transit=transitFor(item,state,o,unit,receipt,snapshot);
+    const manualInbound=Math.max(0,num(o.inbound,0)),inbound=transit.qty+manualInbound;
     const context={...state.data,_recentWeight:cfg.recentWeight};
-    const series=getSeries(item,linkId,o,context,usageIndex);
+    const series=getSeries(workingItem,linkId,o,context,usageIndex);
     const daily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
     const reasons=[];
-    if(stock===null)reasons.push('Conciliar piezas y kg/L del inventario');
-    if(['L','KG'].includes(item.unit)&&!o.stockVerified)reasons.push('Validar stock convertido a '+item.unit);
+    if(stock===null)reasons.push('Validar stock en '+unit+'; no se convierten unidades mixtas automáticamente');
+    if(['KG','L'].includes(item.unit)&&!o.stockVerified)reasons.push('Validar conversión del stock original a '+unit);
+    if(['KG','L'].includes(unit)&&item.unit!==unit&&!o.stockVerified)reasons.push('Validar cambio a '+unit);
     if(daily===null)reasons.push(series.reason||'Capturar consumo diario');
     if(!manual && linkId && !o.confirmed)reasons.push('Confirmar artículo del Motor 02');
     if(!manual && series.valid && series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
-    const receipt=cleanDate(cfg.receiptDate),snapshot=cleanDate(state.data.inventoryDate);
+    if(transit.pending.length)reasons.push(...transit.pending);
     const next=receipt?nextDelivery(receipt,cfg.deliveryWeekdays):'';
     const elapsed=snapshot&&receipt?daysBetween(snapshot,receipt):NaN;
     const coverageDays=receipt&&next?daysBetween(receipt,next):NaN;
@@ -261,25 +331,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if(!snapshot)reasons.push('Indicar fecha del conteo inicial');
     else if(Number.isFinite(elapsed)&&elapsed<0)reasons.push('La recepción debe ser posterior al conteo inicial');
     const safety=Math.max(0,num(cfg.safetyDays,0));
-    const min=daily==null||!Number.isFinite(elapsed)||elapsed<0?null:round(daily*(elapsed+safety),item.unit);
-    const max=daily==null||!Number.isFinite(elapsed)||elapsed<0||!Number.isFinite(coverageDays)?null:round(daily*(elapsed+coverageDays+safety),item.unit);
+    const min=daily==null||!Number.isFinite(elapsed)||elapsed<0?null:round(daily*(elapsed+safety),unit);
+    const max=daily==null||!Number.isFinite(elapsed)||elapsed<0||!Number.isFinite(coverageDays)?null:round(daily*(elapsed+coverageDays+safety),unit);
     const coverage=stock!==null&&daily>0?stock/daily:(daily===0?Infinity:null);
-    const multiple=(num(o.multiple,['PZA','UND','ST'].includes(item.unit)?1:.001)>0)?num(o.multiple,['PZA','UND','ST'].includes(item.unit)?1:.001):1;
-    const position=stock===null||!Number.isFinite(elapsed)||elapsed<0||daily===null?null:stock - daily*elapsed + inbound;
+    const multiple=(num(o.multiple,['PZA','UND'].includes(unit)?1:.001)>0)?num(o.multiple,['PZA','UND'].includes(unit)?1:.001):1;
+    const position=stock===null||!Number.isFinite(elapsed)||elapsed<0||daily===null?null:stock-daily*elapsed+inbound;
     const required=daily==null||!Number.isFinite(coverageDays)?null:daily*(coverageDays+safety);
-    if(['L','KG'].includes(item.unit)&&daily>0&&position!==null&&required>position&&!(num(o.multiple,null)>0))reasons.push('Definir múltiplo de compra en '+item.unit);
+    if(['L','KG'].includes(unit)&&daily>0&&position!==null&&required>position&&!(num(o.multiple,null)>0))reasons.push('Definir múltiplo de compra en '+unit);
     const ready=reasons.length===0;
-    let order=ready?0:null;
-    if(ready&&required>position&&daily>0){
-      order=Math.max(0,Math.ceil((required-position-1e-9)/multiple)*multiple);
-      order=Math.round(order*1e6)/1e6;
-    }
+    // Mostrar una propuesta calculada aunque falte confirmar el vínculo: NO es un pedido validado.
+    let order=position!==null&&required!==null?0:null;
+    if(order!==null&&required>position&&daily>0){order=Math.max(0,Math.ceil((required-position-1e-9)/multiple)*multiple);order=Math.round(order*1e6)/1e6;}
     const status=!ready?'pendiente':order>0?'pedido':'listo';
     const source=manual?'manual':(linkId&&series.valid?'motor':'sin-historial');
-    return {item,override:o,linkId,daily,stock,inbound,position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,coverageDays,required,risk:position!==null&&position<0};
+    const reviewSignature=[unit,stock,daily,inbound,receipt,next,order].join('|');
+    const reviewed=!!(o.reviewed&&o.reviewSignature===reviewSignature&&order===0);
+    return {item,unit,override:o,linkId,daily,stock,inbound,manualInbound,transit,position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,coverageDays,required,risk:position!==null&&position<0,reviewSignature,reviewed};
   }
 
-  root.WOECore={DEFAULTS,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round};
+  root.WOECore={DEFAULTS,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,selectedUnit,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round,transitFor};
   if(typeof module==='object'&&module.exports)module.exports=root.WOECore;
 })(typeof window!=='undefined'?window:globalThis);
 
@@ -317,7 +387,7 @@ async function extractPdfStreams(bytes){
       const array=bytes.slice(bodyStart,bodyStart+rawText.length);
       try{content=await inflate(array);}catch(e){re.lastIndex=close+9;continue;}
     } else content=rawText;
-    if(content.includes(' Tj')||content.includes(' TJ'))streams.push(content);
+    if(/\bTj\b|\bTJ\b/.test(content))streams.push(content);
     re.lastIndex=close+9;
   }
   return streams;
@@ -354,7 +424,18 @@ async function parse(file){
   if(expected!==null&&rows.length!==expected)throw Error(`Se identificaron ${rows.length} artículos de ${expected}. No se cargó un inventario incompleto; utiliza el reporte Excel.`);
   return {rows,date,expected};
 }
-root.WOEPdfInventory={parse};
+async function readSpans(file){
+  const streams=await extractPdfStreams(new Uint8Array(await file.arrayBuffer()));
+  if(!streams.length)throw Error('El PDF no tiene texto seleccionable o su formato no está admitido.');
+  return streams.map(content=>{
+    const spans=[],re=/BT\s*([\s\S]*?)\s+ET\b/g;let match;
+    while((match=re.exec(content))!==null){const segment=match[1];const tm=/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Tm\b/.exec(segment);
+      const str=/\(((?:\\.|[^\\)])*)\)\s*Tj/.exec(segment);
+      if(tm&&str)spans.push({x:Number(tm[1]),y:Number(tm[2]),text:decodePdfString(str[1])});
+    }return spans;
+  });
+}
+root.WOEPdfInventory={parse,readSpans};
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
@@ -408,16 +489,54 @@ if(typeof module==='object'&&module.exports)module.exports=root.WOEMatcher;
 
 </script>
 <script>
+/* Pedidos de proveedor: PDF de texto con NºMaterial Cliente, Cantidad y Unidad. */
+(function(root){'use strict';
+ const dateFromSpanish=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';};
+ function packSize(name,unit){const u=String(unit||'').trim().toUpperCase(),n=String(name||'').toUpperCase().replace(/\s+/g,' ');
+  if(['PZA','PZ','UND','BTE','BOT','BTL','BOL','BLI','REB','PAQ'].includes(u))return 1;
+  if(['CAJ','CJ','CJA','CAJA'].includes(u)){
+   const m=n.match(/\bCJ\s*(\d+(?:\.\d+)?)\s*(?:PZAS?|PZ|PZA|UND|LT|LTS|L|BOT|BTE|BTL|REB|BOL|BLISTERS?|PQT)/);
+   return m?Number(m[1]):null;
+  }
+  return null;
+ }
+ async function parse(file){
+  const pages=await root.WOEPdfInventory.readSpans(file),text=pages.flat().map(x=>x.text).join('\n');
+  const om=text.match(/(\d{8,})\s*\/\s*(\d{1,2}\/\d{1,2}\/\d{4})/);
+  const delivery=text.match(/Fecha\s+de\s+entrega[^\d]*(?:D[ií]a)?\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+  const orderNumber=om?.[1]||file.name.replace(/\.pdf$/i,'');
+  const deliveryDate=dateFromSpanish(delivery?.[1]);
+  if(!deliveryDate)throw Error('No se encontró la fecha de entrega en el PDF.');
+  const rows=[];
+  for(const spans of pages){
+   for(const m of spans.filter(v=>v.x>=45&&v.x<90&&/^\d{5,8}$/.test(v.text))){
+    const siblings=spans.filter(v=>Math.abs(v.y-m.y)<2.4);
+    const at=(x,range=8)=>siblings.find(v=>Math.abs(v.x-x)<range)?.text||'';
+    const sap=at(470),name=at(130,12),qty=Number(at(370).replace(',','.')),unit=at(420);
+    if(!/^\d{5,8}$/.test(sap)||!name||!(qty>0)||!unit)continue;
+    const factor=packSize(name,unit);
+    rows.push({sap,vendorCode:m.text,name,qty,supplierUnit:unit,packFactor:factor,pieces:factor===null?null:Math.round(qty*factor*1e6)/1e6});
+   }
+  }
+  if(!rows.length)throw Error('No se encontraron renglones con NºMaterial Cliente, cantidad y unidad. Verifica el formato del PDF.');
+  const destination=text.match(/\b(B\d{3}\s*\/[^\n]+)/)?.[1]?.trim()||'';
+  return {id:'PDF:'+orderNumber,orderNumber,deliveryDate,filename:file.name,destination,rows};
+ }
+ root.WOETransitPDF={parse,packSize,dateFromSpanish};
+})(window);
+</script>
+<script>
 (function(){
 'use strict';
 const Core=window.WOECore;
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MXN=x=>Core.format(x,2);
-const EMPTY=()=>({version:1,storeId:'',storeName:'',inventoryGenerated:'',inventoryDate:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]}});
+const EMPTY=()=>({version:1,storeId:'',storeName:'',inventoryGenerated:'',inventoryDate:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]},transitDocs:[]});
 let state={data:EMPTY(),settings:{...Core.DEFAULTS},overrides:{},view:'pedido'};
 let usageIndex=new Map(), currentDetail=null, editingOptions=[], changed=false;
 let filter={search:'',family:'',status:''};
+let tableSort={key:'name',dir:'asc'};
 const LS='woe-pedidos-local-v2';
 const todayLocal=()=>{const n=new Date();return [n.getFullYear(),String(n.getMonth()+1).padStart(2,'0'),String(n.getDate()).padStart(2,'0')].join('-');};
 const ES_DAYS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -430,6 +549,7 @@ function reindex(){usageIndex=Core.indexUsage(state.data);}
 function allResults(){return state.data.inventory.map(item=>Core.derive(item,state,usageIndex));}
 function effectiveResults(){return allResults().filter(x=>x.ready&&x.order>0);}
 function haveData(){return state.data.inventory.length>0;}
+function transitDocs(){return state.data.transitDocs||[];}
 function sourceStatus(){
   const d=state.data;
   for(const id of ['01','02','03']){
@@ -448,6 +568,24 @@ function sourceStatus(){
 function populateFamilies(){const families=[...new Set(state.data.inventory.map(x=>x.family))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   for(const id of ['familyFilter','levelFilter']){const sel=$(id),v=sel.value;sel.innerHTML='<option value="">Todas las familias</option>'+families.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');sel.value=families.includes(v)?v:'';}
 }
+function populateTransitSelect(){
+ const el=$('transitManualSap'),old=el.value;
+ el.innerHTML='<option value="">Selecciona SAP...</option>'+state.data.inventory.map(x=>`<option value="${esc(x.sap)}">${esc(x.sap)} · ${esc(x.name)}</option>`).join('');
+ el.value=state.data.inventory.some(x=>x.sap===old)?old:'';
+}
+function renderTransit(){
+ populateTransitSelect();
+ const docs=transitDocs(),date=state.settings.receiptDate,snapshot=state.data.inventoryDate;
+ const inventory=new Set(state.data.inventory.map(x=>String(x.sap)));
+ const lines=docs.flatMap(d=>(d.rows||[]).map((r,i)=>({d,r,i})));
+ $('transitSummary').textContent=docs.length?`${docs.length} documento(s) · ${lines.length} renglón(es) · ${lines.filter(x=>inventory.has(String(x.r.sap))).length} con SAP del inventario. El tránsito solo se suma en la fecha de recepción aplicable.`:'Sin artículos en tránsito. Puedes cargar un PDF o agregar cantidades manualmente.';
+ $('transitBody').innerHTML=lines.map(({d,r,i})=>{
+  const matches=inventory.has(String(r.sap));
+  const qualifies=d.deliveryDate&&snapshot&&date&&d.deliveryDate>snapshot&&d.deliveryDate<=date;
+  const status=!matches?'SAP ausente del inventario':r.pieces===null?'Revisar presentación':qualifies?'Se considera en el cálculo':d.deliveryDate<=snapshot?'Fecha anterior/al conteo':'Fuera del periodo';
+  return `<tr><td><strong>${esc(d.orderNumber)}</strong><span class="product-code">${esc(d.filename)} · ${esc(d.deliveryDate||'sin fecha')}</span></td><td><strong>${esc(r.name)}</strong><span class="product-code">SAP ${esc(r.sap)} · Prov. ${esc(r.vendorCode||'—')}</span></td><td class="numeric">${Core.format(r.qty,2)} ${esc(r.supplierUnit)}</td><td class="numeric">${r.pieces===null?'Por validar':Core.format(r.pieces,3)}</td><td><span class="${qualifies&&matches&&r.pieces!==null?'status-chip good':'cell-muted'}">${esc(status)}</span></td><td><button type="button" class="action-link" data-remove-transit="${esc(d.id)}" data-row-index="${i}" aria-label="Eliminar renglón">Quitar</button></td></tr>`;
+ }).join('')||'<tr><td colspan="6" class="cell-muted" style="padding:17px">No hay registros de tránsito.</td></tr>';
+}
 function renderCalendar(){
   const today=todayLocal();$('todayDate').value=today;
   const weekdays=Array.isArray(state.settings.deliveryWeekdays)?state.settings.deliveryWeekdays:[];
@@ -461,29 +599,23 @@ function renderCalendar(){
   $('recentWeight').value=state.settings.recentWeight;
   const w=Number(state.settings.recentWeight);
   const s=(6*w/100+4*(100-w)/100).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2});
-  $('weightExplanation').innerHTML=`<strong>¿Qué significa?</strong> La aplicación usa <b>${w}%</b> del consumo promedio de los últimos 7 días y <b>${100-w}%</b> del promedio de los últimos 28 días. Ejemplo: si los últimos 7 días gastaste <b>6 piezas/día</b> y en 28 días promediaste <b>4 piezas/día</b>, se estimarán <b>${s} piezas/día</b>. Solo afecta al pronóstico automático del Motor 02: <b>no altera los consumos capturados manualmente.</b>`;
+  $('weightExplanation').innerHTML=`<strong>¿Qué significa?</strong> La aplicación pondera <b>${w}%</b> del promedio de los últimos 7 días y <b>${100-w}%</b> del promedio de 28 días. A mayor porcentaje, más importancia tiene el consumo reciente. No modifica las capturas manuales.`;
   const current=state.settings.receiptDate,next=current?Core.nextDelivery(current,weekdays):'';
   const until=current?Core.daysBetween(today,current):NaN;
   const span=current&&next?Core.daysBetween(current,next):NaN;
   $('calendarSummary').innerHTML=current?`<strong>Entrega seleccionada: ${longDate(current)}</strong><span>${until===0?'Se recibe hoy':until+' día(s) desde hoy'} · Siguiente entrega: ${longDate(next)} · Cobertura: ${span} día(s)</span>`:'Selecciona uno o más días de entrega.';
 }
-function renderExample(){
-  // Demostración fija y verificable, independiente del inventario real de la tienda.
-  const tue=Core.derive({sap:'EX',unit:'PZA',pieces:12,bulk:0},{data:{inventoryDate:'2026-11-09',motor02:{}},settings:{deliveryWeekdays:[2,6],receiptDate:'2026-11-10',safetyDays:0},overrides:{EX:{manual:4.8}}},new Map());
-  const sat=Core.derive({sap:'EX',unit:'PZA',pieces:0,bulk:0},{data:{inventoryDate:'2026-11-14',motor02:{}},settings:{deliveryWeekdays:[2,6],receiptDate:'2026-11-14',safetyDays:0},overrides:{EX:{manual:4.8}}},new Map());
-  $('exampleResult').innerHTML=`<div><small>Martes 10/11 · Cubrir hasta sábado</small><strong>${tue.order} piezas</strong><p>12 − 4.8 = ${Core.format(tue.position,1)} piezas al recibir. Se necesitan 19.2 para los siguientes 4 días.</p></div><div><small>Sábado 14/11 · Cubrir hasta martes</small><strong>${sat.order} piezas</strong><p>Si el pedido del martes se recibe y se consumen 4.8 por día, quedarán 0 piezas. Se requieren 14.4 para los siguientes 3 días.</p></div>`;
-}
 function render(){
-  sourceStatus();populateFamilies();renderCalendar();renderExample();$('onboarding').classList.toggle('hidden',haveData());
+  sourceStatus();populateFamilies();renderCalendar();renderTransit();$('onboarding').classList.toggle('hidden',haveData());
   $('exportBtn').disabled=!haveData();$('printBtn').disabled=!haveData();
   $('printMeta').textContent=`Inventario: ${state.data.inventoryDate||'pendiente'} · Recepción: ${state.settings.receiptDate||'pendiente'} · Siguiente: ${state.settings.receiptDate?Core.nextDelivery(state.settings.receiptDate,state.settings.deliveryWeekdays):'—'}`;
   const rows=allResults();const ready=rows.filter(x=>x.ready).length;
-  $('statProducts').textContent=Core.format(rows.length,0);$('statReady').textContent=Core.format(ready,0);$('statPending').textContent=Core.format(rows.length-ready,0);$('statOrder').textContent=Core.format(rows.filter(x=>x.order>0).length,0);
+  $('statProducts').textContent=Core.format(rows.length,0);$('statReady').textContent=Core.format(ready,0);$('statPending').textContent=Core.format(rows.filter(x=>!x.ready&&!x.reviewed).length,0);$('statOrder').textContent=Core.format(rows.filter(x=>x.order>0).length,0);
   renderTable(rows);renderLevels(rows);renderReconciliation(rows);renderTrendSelect(rows);renderContext();
 }
 function includesQuery(r,query){return !query||Core.norm([r.item.sap,r.item.name,r.item.family,r.linkId].join(' ')).includes(Core.norm(query));}
 function itemLabel(r){return `<strong class="product-name">${esc(r.item.name)}</strong><span class="product-code">SAP ${esc(r.item.sap)} · ${esc(r.item.family)}</span>`;}
-function stockText(r){return r.stock===null?'<span class="cell-muted">Revisar</span>':`${Core.format(r.stock,3)} <small class="cell-muted">${esc(r.item.unit)}</small>`;}
+function stockText(r){return r.stock===null?'<span class="cell-muted">Revisar</span>':`${Core.format(r.stock,3)} <small class="cell-muted">${esc(r.unit)}</small>`;}
 function sourceTag(r){
   if(r.manual)return '<span class="usage-tag manual">Manual</span>';
   if(r.linkId&&r.series.valid&&r.override.confirmed)return '<span class="usage-tag">Motor 02</span>';
@@ -491,14 +623,30 @@ function sourceTag(r){
   return '<span class="usage-tag manual">Por capturar</span>';
 }
 function statusChip(r){
+  if(r.reviewed)return `<span class="status-chip reviewed" title="${esc(r.reasons.length?'Revisión realizada; validaciones pendientes: '+r.reasons.join(' · '):'Revisión finalizada')}">✓ Revisado${r.reasons.length?'*':''}</span>`;
+  if(!r.ready&&r.order>0)return `<span title="${esc(r.reasons.join(' · '))}" class="status-chip provisional">◌ Validar pedido</span>`;
   if(!r.ready)return `<span title="${esc(r.reasons.join(' · '))}" class="status-chip warn">◌ Por revisar</span>`;
   if(r.order>0)return '<span class="status-chip good">● Solicitar</span>';
   return '<span class="status-chip neutral">✓ Cubierto</span>';
 }
+function sortResults(rows){const {key,dir}=tableSort,sign=dir==='asc'?1:-1;
+  return [...rows].sort((a,b)=>{
+   const val=r=>({name:r.item.name,source:r.source,stock:r.stock,inbound:r.inbound,position:r.position,daily:r.daily,coverage:r.coverage,order:r.order,status:r.reviewed?'revisado':r.status})[key];
+   const A=val(a),B=val(b);if(A==null&&B!=null)return 1;if(B==null&&A!=null)return -1;
+   if(typeof A==='number'&&typeof B==='number')return sign*(A-B);
+   return sign*String(A??'').localeCompare(String(B??''),'es',{numeric:true});
+  });
+}
 function renderTable(rows){const q=$('searchInput').value||'';const fam=$('familyFilter').value;const status=$('statusFilter').value;
-  const display=rows.filter(r=>includesQuery(r,q)&&(!fam||r.item.family===fam)&&(!status||(status==='manual'?!r.linkId&&!r.manual:status==='pendiente'?!r.ready:status==='pedido'?r.order>0:r.ready)));
-  $('tableCount').textContent=`${display.length} de ${rows.length} artículos`;
-  $('mainBody').innerHTML=display.map(r=>`<tr data-order="${r.order>0?1:0}"><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.position===null?'—':`<span class="${r.risk?'risk-text':''}">${Core.format(r.position,2)} ${esc(r.item.unit)}</span>`}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo diario manual en ${esc(r.item.unit)}" />`:Core.format(r.daily,3)}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<b>${Core.format(r.order,3)} ${esc(r.item.unit)}</b>`:'0'}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos.</td></tr>';
+  const display=sortResults(rows.filter(r=>includesQuery(r,q)&&(!fam||r.item.family===fam)&&(!status||(status==='manual'?!r.linkId&&!r.manual:status==='pendiente'?!r.ready&&!r.reviewed:status==='revisado'?r.reviewed:status==='pedido'?r.order>0:r.ready))));
+  $('tableCount').textContent=`${display.length} de ${rows.length} artículos · Haz clic en encabezados para ordenar`;
+  document.querySelectorAll('#mainTable th[data-sort]').forEach(th=>th.setAttribute('aria-sort',th.dataset.sort===tableSort.key?(tableSort.dir==='asc'?'ascending':'descending'):'none'));
+  $('mainBody').innerHTML=display.map(r=>{
+   const provisional=r.order!==null&&r.order>0&&!r.ready;
+   const request=r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<span class="${provisional?'order-provisional':''}"><b>${Core.format(r.order,3)} ${esc(r.unit)}</b>${provisional?'<small>Por validar</small>':''}</span>`:'0';
+   const reviewControl=r.order===0?`<button class="review-btn ${r.reviewed?'done':''}" data-review="${esc(r.item.sap)}" title="Marca la revisión visual. No omite validaciones de uso o unidades.">${r.reviewed?'✓ Revisado':'○ Revisar'}</button>`:'<span class="cell-muted">—</span>';
+   return `<tr data-order="${r.order>0?1:0}"><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.inbound>0?`<span class="inbound-count">+${Core.format(r.inbound,3)} ${esc(r.unit)}</span>`:'<span class="inbound-none">—</span>'}</td><td class="numeric">${r.position===null?'—':`<span class="${r.risk?'risk-text':''}">${Core.format(r.position,2)} ${esc(r.unit)}</span>`}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo diario en ${esc(r.unit)}" />`:`${Core.format(r.daily,3)} ${esc(r.unit)}`}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${request}</td><td>${statusChip(r)}</td><td>${reviewControl}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`;
+  }).join('')||'<tr><td colspan="11" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos.</td></tr>';
 }
 function renderLevels(rows){const q=$('levelSearch').value||'';const family=$('levelFilter').value;const d=rows.filter(r=>includesQuery(r,q)&&(!family||r.item.family===family));
  $('levelsBody').innerHTML=d.map(r=>`<tr><td>${itemLabel(r)}</td><td class="numeric">${r.daily===null?'—':Core.format(r.daily,3)}</td><td class="numeric">${r.min===null?'—':Core.format(r.min,3)}</td><td class="numeric">${r.max===null?'—':Core.format(r.max,3)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.coverage===null?'—':r.coverage===Infinity?'>99':Core.format(r.coverage,1)}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('');
@@ -513,7 +661,7 @@ function renderTrendSelect(rows){const el=$('trendItemSelect'),prev=el.value;
   el.value=rows.some(r=>r.item.sap===prev)?prev:(rows.find(r=>r.series.valid)?.item.sap||'');renderTrend();
 }
 function renderTrend(){const sap=$('trendItemSelect').value;const r=sap?Core.derive(state.data.inventory.find(x=>x.sap===sap),state,usageIndex):null;
-  const s=r?.series;const unit=r?.item.unit||'';
+  const s=r?.series;const unit=r?.unit||'';
   $('trendRecent').textContent=s?.valid?`${Core.format(s.recent,3)} ${unit}`:'—';
   $('trendPrevious').textContent=s?.valid?`${Core.format(s.previous,3)} ${unit}`:'—';
   $('trendChange').textContent=s?.valid&&s.previous>0?`${s.recent>=s.previous?'+':''}${Core.format(100*(s.recent/s.previous-1),1)}%`:'—';
@@ -551,38 +699,51 @@ function updateUsageSelect(query=''){const list=availableUsageOptions(query);con
 }
 function openDetail(sap){const item=state.data.inventory.find(x=>x.sap===sap);if(!item)return;
   currentDetail=sap;const r=Core.derive(item,state,usageIndex),o=detailOverride();
-  $('detailTitle').textContent=item.name;$('detailSubtitle').textContent=`SAP ${sap} · ${item.family} · ${item.unit}`;
-  $('detailSource').innerHTML=`<strong>Inventario del PDF</strong><div>PIEZAS: ${Core.format(item.pieces,3)} · CANT. UNID.: ${item.bulk===null?'—':Core.format(item.bulk,3)} ${esc(item.unit)}</div><div>Sugerencia de asociación: ${item.suggestions?.[0]?`${esc(item.suggestions[0].name)} (${Core.format(item.suggestions[0].score,1)}%)`:'ninguna'}</div>`;
+  $('detailTitle').textContent=item.name;$('detailSubtitle').textContent=`SAP ${sap} · ${item.family} · ${r.unit}`;
+  $('detailSource').innerHTML=`<strong>Inventario original</strong><div>PIEZAS: ${Core.format(item.pieces,3)} · CANT. UNID.: ${item.bulk===null?'—':Core.format(item.bulk,3)} ${esc(item.unit)}</div><div>En tránsito PDF aplicable: ${Core.format(r.transit.pieces,3)} PZA · Manual: ${Core.format(r.manualInbound,3)} ${esc(r.unit)}</div><div>Sugerencia de asociación: ${item.suggestions?.[0]?`${esc(item.suggestions[0].name)} (${Core.format(item.suggestions[0].score,1)}%)`:'ninguna'}</div>`;
+  $('editUnit').value=r.unit;
   $('editUsageId').value='';updateUsageSelect();$('editUsageId').value=r.linkId||'';
   $('usageSearch').value='';$('editStock').value=r.stock===null?'':r.stock;
   $('editInbound').value=o.inbound??0;$('editManual').value=o.manual??'';
-  const defaultFactor=r.linkId?(state.data.motor02.usageCatalog||[]).find(x=>x.id===r.linkId)?.usageUnit:'';
-  $('editFactor').value=o.factor??(Core.unitFactor(item.unit,defaultFactor)??'');
-  $('editMultiple').value=o.multiple??(['PZA','UND','ST'].includes(item.unit)?1:'');
+  $('editPieceFactor').value=o.pieceFactor??'';
+  const defaultFactor=r.linkId?(state.data.motor02.usageCatalog||[]).find(x=>String(x.id)===String(r.linkId))?.usageUnit:'';
+  $('editFactor').value=o.factor??(Core.unitFactor(r.unit,defaultFactor)??'');
+  $('editMultiple').value=o.multiple??(['PZA','UND'].includes(r.unit)?1:'');
   $('editNote').value=o.note||'';$('editConfirmed').checked=!!o.confirmed;
-  $('stockVerifiedWrap').classList.toggle('hidden',!['KG','L'].includes(item.unit));$('editStockVerified').checked=!!o.stockVerified;
-  $('stockUnitLabel').textContent=`${item.unit} · Edita si hay cantidades mixtas`;
-  $('conversionHint').textContent=`En ${item.unit} por cada unidad de consumo`;
-  $('multipleHint').textContent=item.packHint>1?`Descripción SAP sugiere caja de ${item.packHint} unidades; valida su equivalencia en ${item.unit}`:('En KG/L, captura el múltiplo real si debes pedir.');
-  $('detailWarnings').textContent=r.reasons.join(' · ');
-  updateDetailMath();$('detailOverlay').classList.remove('hidden');$('editUsageId').focus();
+  $('editStockVerified').checked=!!o.stockVerified;
+  updateUnitHints();updateDetailMath();$('detailOverlay').classList.remove('hidden');$('editUsageId').focus();
 }
-function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=id;
-  for(const [field,el] of [['stock','editStock'],['inbound','editInbound'],['manual','editManual'],['factor','editFactor'],['multiple','editMultiple']]){
+function updateUnitHints(){
+ const item=detailItem();if(!item)return;
+ const unit=$('editUnit').value;
+ $('stockUnitLabel').textContent=`${unit} · Edita el stock para recalcular (0 permitido)`;
+ $('editInboundUnit').textContent=`Adicional a PDFs, en ${unit}`;
+ $('pieceConversionHint').textContent=`${unit} por cada PZA del tránsito PDF; ${['PZA','UND'].includes(unit)?'normalmente 1':'captura equivalencia validada'}`;
+ $('conversionHint').textContent=`${unit} por unidad usada por el motor`;
+ $('stockVerifiedWrap').classList.toggle('hidden',!['KG','L'].includes(item.unit)&&!['KG','L'].includes(unit));
+ $('multipleHint').textContent=item.packHint>1?`Descripción sugiere caja de ${item.packHint}; valida el múltiplo en ${unit}`:`Cantidad en ${unit} que puedes pedir por paquete`;
+}
+function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=id;o.unit=$('editUnit').value;
+  for(const [field,el] of [['stock','editStock'],['inbound','editInbound'],['manual','editManual'],['factor','editFactor'],['multiple','editMultiple'],['pieceFactor','editPieceFactor']]){
     const v=$(el).value.trim();if(v!=='')o[field]=Number(v);
   }
-  o.confirmed=$('editConfirmed').checked&&!!id;o.stockVerified=$('editStockVerified').checked;o.note=$('editNote').value.trim();return o;
+  o.confirmed=$('editConfirmed').checked&&!!id;o.stockVerified=$('editStockVerified').checked;o.note=$('editNote').value.trim();
+  const prior=detailOverride();
+  if(prior.reviewed){o.reviewed=prior.reviewed;o.reviewSignature=prior.reviewSignature;}
+  return o;
 }
 function updateDetailMath(){if(!currentDetail)return;const item=detailItem();const temp={...state,overrides:{...state.overrides,[currentDetail]:readDetailForm()}};
   const r=Core.derive(item,temp,usageIndex);
-  $('detailMath').innerHTML=`<strong>Previsualización</strong><div>Uso estimado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(item.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} · Necesario hasta siguiente entrega: ${Core.format(r.required,3)}</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'Necesita revisión':Core.format(r.order,3)+' '+esc(item.unit)}</strong></div>`;
+  $('detailMath').innerHTML=`<strong>Previsualización actualizada</strong><div>Uso estimado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(r.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} ${esc(r.unit)} · Necesario: ${Core.format(r.required,3)} ${esc(r.unit)}</div><div>En tránsito: ${Core.format(r.transit.pieces,3)} PZA PDF + ${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'No calculable':Core.format(r.order,3)+' '+esc(r.unit)}</strong> ${r.ready?'✓ Validado':' · Propuesta sujeta a validación'}</div>`;
   $('detailWarnings').textContent=r.reasons.length?r.reasons.join(' · '):'El artículo tiene los datos necesarios para calcular el pedido.';
 }
 function closeDetail(){$('detailOverlay').classList.add('hidden');currentDetail=null;}
-function saveDetail(){if(!currentDetail)return;const o=readDetailForm();if(Object.entries(o).some(([k,v])=>['stock','inbound','manual','factor','multiple'].includes(k)&&v!==undefined&&(!Number.isFinite(v)||v<0))){toast('Revisa cantidades: no se admiten negativos.');return;}
+function saveDetail(){if(!currentDetail)return;const o=readDetailForm();
+  if(Object.entries(o).some(([k,v])=>['stock','inbound','manual','factor','multiple','pieceFactor'].includes(k)&&v!==undefined&&(!Number.isFinite(v)||v<0))){toast('Revisa cantidades: no se admiten negativos.');return;}
   if(o.factor!==undefined&&o.factor<=0){toast('La conversión debe ser mayor que cero.');return;}
   if(o.multiple!==undefined&&o.multiple<=0){toast('El múltiplo debe ser mayor que cero.');return;}
-  state.overrides[currentDetail]=o;closeDetail();scheduleSave();render();toast('Ajustes guardados para este artículo.');
+  if(o.pieceFactor!==undefined&&o.pieceFactor<=0){toast('La equivalencia por pieza debe ser positiva.');return;}
+  state.overrides[currentDetail]=o;closeDetail();scheduleSave();render();toast('Stock y pedido recalculados para este artículo.');
 }
 // ---------- LECTURA SEGURA DE XLSX / XLSM ----------
 function xmlText(xml){return new DOMParser().parseFromString(xml,'application/xml');}
@@ -730,6 +891,27 @@ async function uploadInventory(file){
   state.data.inventoryDate=date||todayLocal();state.data.inventoryGenerated=date?date+'T00:00:00':new Date().toISOString();state.data.inventoryFilename=file.name;
   scheduleSave();render();toast(`Inventario cargado: ${state.data.inventory.length} artículos. Confirma la fecha del conteo (${state.data.inventoryDate}).`);
 }
+async function uploadTransit(file){
+ if(!haveData())throw Error('Carga el inventario antes de agregar artículos en tránsito.');
+ if(!file.name.toLowerCase().endsWith('.pdf'))throw Error('El tránsito solo admite PDF por ahora.');
+ const doc=await window.WOETransitPDF.parse(file);
+ state.data.transitDocs=transitDocs().filter(x=>x.id!==doc.id);
+ state.data.transitDocs.push(doc);
+ scheduleSave();render();$('transitContent').classList.remove('hidden');
+ toast(`Pedido ${doc.orderNumber}: ${doc.rows.length} renglones cargados; entrega ${doc.deliveryDate}.`);
+}
+function addTransitManual(){
+ const sap=$('transitManualSap').value,date=$('transitManualDate').value,qty=Number($('transitManualQty').value);
+ if(!sap||!date||!(qty>0)){toast('Selecciona SAP, fecha prevista y cantidad mayor a 0.');return;}
+ const item=state.data.inventory.find(x=>x.sap===sap);
+ const doc={id:'MAN:'+Date.now(),orderNumber:'MANUAL',deliveryDate:date,filename:'Captura manual',destination:'',rows:[{sap,vendorCode:'',name:item?.name||sap,qty,supplierUnit:'PZA',packFactor:1,pieces:qty}]};
+ state.data.transitDocs=[...transitDocs(),doc];$('transitManualQty').value='';
+ scheduleSave();render();$('transitContent').classList.remove('hidden');toast('Artículo en tránsito agregado.');
+}
+function removeTransit(id,index){
+ state.data.transitDocs=transitDocs().map(d=>d.id!==id?d:{...d,rows:d.rows.filter((_,i)=>i!==index)}).filter(d=>d.rows.length);
+ scheduleSave();render();$('transitContent').classList.remove('hidden');toast('Se quitó el registro de tránsito.');
+}
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),6000);}
 function saveBackup(){if(!haveData()){toast('Carga primero tus datos iniciales.');return;}
   const serialized=JSON.stringify({format:'WOE-PEDIDOS-SESION',version:1,data:state.data,settings:state.settings,overrides:state.overrides});
@@ -769,21 +951,23 @@ async function createXlsx(sheets){const zip=new JSZip(),ns='http://schemas.openx
 async function exportXlsx(){if(!haveData()){toast('Primero carga el inventario.');return;}
   $('exportBtn').disabled=true;try{
     const rows=allResults();const date=todayLocal();
-    const sheet1=[['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date],['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],['Inventario contado: '+state.data.inventoryDate+' · Revisar códigos, cantidades y múltiplos antes de solicitar.'],['SAP','Producto','Familia','Unidad','Stock inicial','Stock a recepción','En tránsito','Uso diario','Mínimo','Máximo','Cantidad a solicitar','Múltiplo','Origen','Nota']];
-    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([r.item.sap,r.item.name,r.item.family,r.item.unit,r.stock,r.position,r.inbound,r.daily,r.min,r.max,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.override.note||'']);
-    const sheet2=[['SAP','Producto','Familia','Stock inicial','Unidad','Uso diario','Mínimo','Máximo','Cobertura días','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido','Estado','Motivo pendiente']];
+    const sheet1=[['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date],['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],['Inventario contado: '+state.data.inventoryDate+' · Revisar códigos, cantidades y múltiplos antes de solicitar.'],['SAP','Producto','Familia','Unidad','Stock inicial','Stock a recepción','En tránsito total','En tránsito PDF (PZA)','Uso diario','Mínimo','Máximo','Cantidad a solicitar','Múltiplo','Origen','Nota']];
+    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([r.item.sap,r.item.name,r.item.family,r.unit,r.stock,r.position,r.inbound,r.transit.pieces,r.daily,r.min,r.max,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.override.note||'']);
+    const sheet2=[['SAP','Producto','Familia','Stock inicial','Unidad','Uso diario','Mínimo','Máximo','Cobertura días','En tránsito','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido (puede ser provisional)','Estado','Revisado','Motivo pendiente']];
     const sheet3=[['SAP','Producto','Fecha','Uso convertido a unidad del inventario','Unidad','Origen','ID de uso']];
     const sheet4=[['SAP','Producto','Razón de revisión','ID uso propuesto','Confianza de nombre']];
-    for(const r of rows){sheet2.push([r.item.sap,r.item.name,r.item.family,r.stock,r.item.unit,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.position,r.receipt,r.next,r.order,r.ready?'Validado':'Pendiente',r.reasons.join('; ')]);
-      if(r.series?.valid)for(const p of r.series.series)sheet3.push([r.item.sap,r.item.name,p.date,p.value,r.item.unit,r.manual?'Manual':'Motor 02',r.linkId]);
+    for(const r of rows){sheet2.push([r.item.sap,r.item.name,r.item.family,r.stock,r.unit,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.inbound,r.position,r.receipt,r.next,r.order,r.ready?'Validado':'Pendiente',r.reviewed?'Sí':'No',r.reasons.join('; ')]);
+      if(r.series?.valid)for(const p of r.series.series)sheet3.push([r.item.sap,r.item.name,p.date,p.value,r.unit,r.manual?'Manual':'Motor 02',r.linkId]);
       if(!r.ready)sheet4.push([r.item.sap,r.item.name,r.reasons.join('; '),r.item.suggestions?.[0]?.id||'',r.item.suggestions?.[0]?.score||0]);
     }
-    const blob=await createXlsx([{name:'Pedido WOE',rows:sheet1},{name:'Maximos y Minimos',rows:sheet2},{name:'Tendencia de Uso',rows:sheet3},{name:'Pendientes',rows:sheet4}]);
+    const transitSheet=[['Pedido proveedor','Archivo','Fecha de entrega','SAP cliente','Artículo','Cantidad original','Unidad original','Piezas calculadas','Código proveedor']];
+    for(const d of transitDocs())for(const l of d.rows||[])transitSheet.push([d.orderNumber,d.filename,d.deliveryDate,l.sap,l.name,l.qty,l.supplierUnit,l.pieces,l.vendorCode]);
+    const blob=await createXlsx([{name:'Pedido WOE',rows:sheet1},{name:'Maximos y Minimos',rows:sheet2},{name:'Tendencia de Uso',rows:sheet3},{name:'Pendientes',rows:sheet4},{name:'En Transito',rows:transitSheet}]);
     downloadBlob(blob,`Pedido_WOE_${state.data.storeId||'Tienda'}_${date}.xlsx`);toast('Excel creado: pedido, máximos y mínimos, tendencia y pendientes.');
   }catch(e){console.error(e);toast('No se pudo exportar: '+e.message);}finally{$('exportBtn').disabled=false;}
 }
 // ---------- EVENTOS ----------
-function init(){restore();render();
+function init(){restore();render();$('transitManualDate').value=todayLocal();
   document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
   $('gotoFiles').addEventListener('click',()=>{$('sources').classList.remove('hidden');$('filesSection').scrollIntoView({behavior:'smooth'});});
   $('toggleFiles').addEventListener('click',()=>{const hidden=$('sources').classList.toggle('hidden');$('toggleFiles').textContent=hidden?'Mostrar fuentes ⌄':'Ocultar fuentes ⌃';});
@@ -794,7 +978,10 @@ function init(){restore();render();
     try{await uploadMotor(id,f);}catch(err){console.error(err);sourceStatus();toast('Motor '+id+': '+err.message);}e.target.value='';});
   $('invInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await uploadInventory(f);}catch(err){console.error(err);toast('Inventario: '+err.message);}e.target.value='';});
   $('backupBtn').addEventListener('click',saveBackup);$('exportBtn').addEventListener('click',exportXlsx);$('printBtn').addEventListener('click',()=>{if(!haveData()){toast('Carga primero los datos iniciales.');return;}window.print();});
-  $('helpBtn').addEventListener('click',()=>toast('Carga Motor 01, Motor 02, Motor 03 y el inventario PDF o Excel. Después selecciona días y fecha de recepción.'));
+  $('helpBtn').addEventListener('click',()=>toast('Carga los tres motores e inventario, configura entregas y, si aplica, artículos en tránsito. Haz clic en los encabezados para ordenar.'));
+  $('toggleTransit').addEventListener('click',()=>{const hidden=$('transitContent').classList.toggle('hidden');$('toggleTransit').textContent=hidden?'Mostrar tránsito ⌄':'Ocultar tránsito ⌃';});
+  $('transitInput').addEventListener('change',async e=>{for(const f of [...e.target.files]){try{await uploadTransit(f);}catch(err){console.error(err);toast('Tránsito '+f.name+': '+err.message);}}e.target.value='';});
+  $('addTransitManual').addEventListener('click',addTransitManual);
   $('resetConfigBtn').addEventListener('click',()=>{state.settings={...Core.DEFAULTS,deliveryWeekdays:[...Core.DEFAULTS.deliveryWeekdays]};scheduleSave();render();toast('Calendario restablecido.');});
   $('resetAllBtn').addEventListener('click',()=>{if(!window.confirm('¿BORRAR TODOS LOS DATOS? Se eliminarán motores, inventario, calendario, consumos manuales y asociaciones guardados en este navegador. Esta acción no se puede deshacer.'))return;clearTimeout(scheduleSave._timer);try{localStorage.removeItem(LS);localStorage.removeItem('woe-pedidos-local-v1');}catch(e){}state={data:EMPTY(),settings:{...Core.DEFAULTS,deliveryWeekdays:[...Core.DEFAULTS.deliveryWeekdays]},overrides:{},view:'pedido'};reindex();render();switchView('pedido');toast('Se borraron todos los datos. Carga los motores para empezar de nuevo.');});
   document.querySelectorAll('#deliveryDays input').forEach(box=>box.addEventListener('change',()=>{
@@ -810,7 +997,15 @@ function init(){restore();render();
   });
   for(const [id,fn] of [['searchInput',()=>renderTable(allResults())],['familyFilter',()=>renderTable(allResults())],['statusFilter',()=>renderTable(allResults())],['levelSearch',()=>renderLevels(allResults())],['levelFilter',()=>renderLevels(allResults())]])$(id).addEventListener(id.includes('Filter')?'change':'input',fn);
   $('trendItemSelect').addEventListener('change',renderTrend);
-  document.addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b)openDetail(b.dataset.edit);});
+  document.addEventListener('click',e=>{
+    const rm=e.target.closest('[data-remove-transit]');if(rm){removeTransit(rm.dataset.removeTransit,Number(rm.dataset.rowIndex));return;}
+    const rev=e.target.closest('[data-review]');if(rev){const sap=rev.dataset.review,item=state.data.inventory.find(i=>i.sap===sap);if(!item)return;
+      const r=Core.derive(item,state,usageIndex);if(r.order!==0){toast('Solo puedes marcar como revisados los artículos cuya propuesta es cero.');return;}
+      const old=state.overrides[sap]||{};state.overrides[sap]={...old,reviewed:!r.reviewed,reviewSignature:r.reviewSignature};scheduleSave();render();toast(!r.reviewed?'Artículo marcado como revisado. Las validaciones técnicas siguen visibles.':'Revisión revertida.');return;
+    }
+    const b=e.target.closest('[data-edit]');if(b)openDetail(b.dataset.edit);
+  });
+  document.querySelectorAll('#mainTable th[data-sort]').forEach(th=>{th.addEventListener('click',()=>{const key=th.dataset.sort;if(tableSort.key===key)tableSort.dir=tableSort.dir==='asc'?'desc':'asc';else{tableSort.key=key;tableSort.dir=key==='order'||key==='inbound'||key==='daily'?'desc':'asc';}renderTable(allResults());});});
   document.addEventListener('change',e=>{const el=e.target.closest('[data-quick-use]');if(!el)return;
     const sap=el.dataset.quickUse;const val=el.value.trim();if(val===''||!Number.isFinite(Number(val))||Number(val)<0){toast('Captura un consumo diario válido, igual o mayor a cero.');return;}
     state.overrides[sap]={...(state.overrides[sap]||{}),manual:Number(val)};scheduleSave();render();toast('Consumo diario manual registrado para SAP '+sap+'.');
@@ -819,7 +1014,15 @@ function init(){restore();render();
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('detailOverlay').classList.contains('hidden'))closeDetail();});
   $('usageSearch').addEventListener('input',e=>{const was=$('editUsageId').value;updateUsageSelect(e.target.value);$('editUsageId').value=was;});
   $('editUsageId').addEventListener('change',()=>{const item=detailItem();const id=$('editUsageId').value;
-    const u=(state.data.motor02.usageCatalog||[]).find(x=>x.id===id);$('editFactor').value=u?Core.unitFactor(item.unit,u.usageUnit)??'':'';$('editConfirmed').checked=false;updateDetailMath();});
+    const u=(state.data.motor02.usageCatalog||[]).find(x=>x.id===id);$('editFactor').value=u?Core.unitFactor($('editUnit').value,u.usageUnit)??'':'';$('editConfirmed').checked=false;updateDetailMath();});
+  $('editUnit').addEventListener('change',()=>{
+    // No interpretar la cifra de stock anterior como si estuviera en la nueva unidad.
+    const item=detailItem(),newUnit=$('editUnit').value,oldUnit=Core.selectedUnit(item,detailOverride());
+    if(newUnit!==oldUnit){$('editStock').value='';$('editMultiple').value=['PZA','UND'].includes(newUnit)?1:'';}
+    const id=$('editUsageId').value,u=(state.data.motor02?.usageCatalog||[]).find(x=>String(x.id)===String(id));
+    $('editFactor').value=u?Core.unitFactor(newUnit,u.usageUnit)??'':'';
+    updateUnitHints();updateDetailMath();
+  });
   document.querySelectorAll('.drawer-form input,.drawer-form select').forEach(el=>el.addEventListener('input',updateDetailMath));
   $('saveDetail').addEventListener('click',saveDetail);$('clearDetail').addEventListener('click',()=>{if(!currentDetail)return;const sap=currentDetail;delete state.overrides[sap];closeDetail();scheduleSave();render();openDetail(sap);toast('Se restauraron los valores iniciales de este artículo.');});
   $('bulkConfirm').addEventListener('click',()=>{let count=0;for(const item of state.data.inventory){if(!item.autoLink)continue;const o=state.overrides[item.sap]||{};
