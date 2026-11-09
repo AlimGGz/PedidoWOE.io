@@ -1,0 +1,9 @@
+# No publicar datos internos, motores, inventarios o respaldos privados
+Inicio_Pedidos_WOE_*.json
+Respaldo_Privado_*.json
+Motor_*.xlsm
+Motor_*.xlsx
+Inventario_Contado_*.pdf
+Inventario_Contado_*.xlsx
+*.woe.json
+*.pdf
