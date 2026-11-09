@@ -1,114 +1,78 @@
-# Pedidos WOE · GitHub Pages
+# Pedidos WOE · GitHub Pages — versión 2
 
-Aplicación web estática para calcular propuestas de pedido usando el **inventario contado por SAP**, el **consumo diario del Motor 02** y el contexto de operaciones y ventas de los Motores 01 y 03. Dispone de las vistas **Pedido WOE**, **Máximos y mínimos**, **Tendencia de uso** y **Conciliación de códigos**.
+Aplicación web estática para preparar un **Pedido WOE**, consultar **Máximos y Mínimos**, estudiar **Tendencia de Uso** y conciliar códigos de inventario. Se ha probado con los tres motores `.xlsm` del 9 de noviembre de 2026 y con el PDF `Inventario_Contado_2026-11-09.pdf` (253 SAP).
 
-## 1. Instalación en GitHub Pages
+## Publicación en GitHub Pages
 
-1. Crea un repositorio nuevo en GitHub, por ejemplo `pedidos-woe`.
-2. Sube **solamente los archivos que están en esta carpeta**, conservando la estructura:
+Sube el contenido de esta carpeta a la raíz de un repositorio de GitHub y configura **Settings → Pages → Deploy from a branch → main → / (root)**.
 
-   ```text
-   index.html
-   styles.css
-   core.js
-   app.js
-   .gitignore
-   .nojekyll
-   vendor/
-       jszip.min.js
-       JSZip-LICENSE.md
-   README.md
-   ```
+Archivos del sitio:
 
-3. En el repositorio, abre **Settings > Pages > Build and deployment**. Selecciona **Deploy from a branch**, rama `main`, carpeta `/ (root)`, y guarda.
-4. Cuando GitHub Pages publique el sitio, ábrelo desde la dirección indicada en Settings > Pages. Si abres `index.html` en tu equipo, la aplicación también puede funcionar localmente en un navegador moderno.
+```
+index.html
+app.js
+core.js
+matcher.js
+pdf-inventory.js
+styles.css
+.nojekyll
+.gitignore
+vendor/jszip.min.js
+vendor/JSZip-LICENSE.md
+README.md
+```
 
-**Muy importante:** NO subas a GitHub los motores Excel reales, el PDF de inventario, el JSON privado de inicio ni los respaldos generados. Si GitHub Pages es público, cualquier persona podría descargarlos. **El ZIP del sitio NO incluye datos privados**.
+No incluyas motores originales, inventarios, respaldos JSON, exportaciones ni ventas de una tienda en el repositorio. El código web puede estar publicado sin publicar los datos operativos.
 
-## 2. Primer arranque y datos iniciales
+## Nuevo flujo: sin pedir JSON
 
-Se entrega **por separado** el archivo `Inicio_Pedidos_WOE_2026-11-09.json`, derivado de los cuatro archivos suministrados. Dentro de la página, haz clic en **Cargar archivo inicial**, selecciona ese JSON y verifica la información de la tienda.
+1. **Motor 01** (`.xlsm` o `.xlsx`, auditoría de transacciones). Se detecta la tienda y se verifica que el archivo contenga datos de una sola tienda.
+2. **Motor 02** (`.xlsm` o `.xlsx`, uso y stock). Se usa el identificador de tienda del Motor 01 para filtrar el uso ideal y descartar datos de otras tiendas. Este motor alimenta el consumo diario.
+3. **Motor 03** (`.xlsm` o `.xlsx`, detalle de productos). Se extraen movimientos de venta solo como contexto, no como consumo adicional del stock.
+4. **Inventario / Stock inicial** (`.pdf`, `.xlsx`, `.xlsm` o `.csv`). Se habilita únicamente cuando los tres motores están cargados. El inventario define el catálogo SAP a pedir. Si se carga un nuevo inventario, sustituye la lista anterior para no arrastrar códigos obsoletos.
+5. **Fecha del conteo**. Revisa la fecha detectada en el PDF. Si el Excel no indica una fecha de conteo legible, se usa la fecha local actual como propuesta, que debes confirmar o modificar.
+6. **Calendario de entrega**. Marca los días habituales de recepción, elige el pedido del desplegable de fechas próximas y, si aplica, configura días de seguridad.
+7. **Conciliación**. Revisa/valida la coincidencia entre el código SAP y el ID de uso del Motor 02. Artículos sin uso, o cuyo enlace no es seguro, admiten consumo diario manual y quedan diferenciados discretamente.
+8. **Pedido**. Consulta stock inicial, stock estimado al recibir, uso diario, cantidad a solicitar y pendientes. Exporta Excel o imprime en PDF.
 
-El archivo privado trae, entre otras cosas:
+### Sobre los PDF
 
-- Los **253 códigos SAP** del PDF de inventario entregado. La fecha real de generación que figura dentro del reporte es **8 de noviembre de 2026 a las 21:11:25**, aunque el nombre del PDF contiene 9 de noviembre.
-- Motor 01: 21 registros de operaciones y venta diaria, tienda **38118**, desde el 19 de octubre hasta el 8 de noviembre de 2026.
-- Motor 02: **2,462 registros** de consumo de la tienda **38118** desde el 20 de octubre hasta el 8 de noviembre de 2026; 212 ID de uso distintos. Se descartaron **3,103 registros** de la tienda **38604** que se encontraban mezclados en la hoja `uso_ac`.
-- Motor 02, catálogo `stock_base`: 915 claves de stock, que **no son las mismas claves** que la hoja `uso_ac` ni los códigos SAP.
-- Motor 03: catálogo de productos y detalle de ventas agregadas por producto y día para análisis contextual. El detalle puede incluir el 9 de noviembre; sus ventas **no se suman al consumo del Motor 02**.
+El lector PDF incorporado funciona **sin conexión y sin subir el PDF a un servidor** para reportes estructurados de inventario que contienen texto seleccionable y la tabla de campos **Familia, SAP, Producto Descripción, Piezas, Cant. Unid., Unidad**, como el PDF de inventario facilitado. Se validan todos los artículos frente al total anunciado en el documento y se rechaza una extracción incompleta. No incorpora reconocimiento óptico de texto: un PDF escaneado o uno con un formato diferente puede requerir Excel. Para Excel, la aplicación identifica la fila de encabezados aunque haya títulos o metadatos al inicio de la hoja.
 
-La aplicación guarda la sesión y los cambios en el almacenamiento local del navegador cuando está disponible. Usa **Guardar respaldo privado** con frecuencia: esos archivos incluyen información operativa de la tienda y tampoco deben publicarse.
+### Cálculo por fecha seleccionada
 
-## 3. Recargar motores semanales
+- `Días hasta recepción = fecha de recepción − fecha del conteo inicial`.
+- `Stock estimado al recibir = stock del conteo − uso diario × días hasta recepción + recepciones en tránsito registradas`.
+- `Días a cubrir = fecha siguiente recepción − fecha de recepción actual`.
+- `Necesidad = uso diario × (días a cubrir + días extra de seguridad)`.
+- `Pedido sugerido = máximo(0, necesidad − stock estimado al recibir)`, **redondeado hacia arriba** al múltiplo de compra configurado.
 
-Haz clic en cada tarjeta de Motor 01, Motor 02 y Motor 03. Puedes seleccionar los archivos originales `.xlsm` o `.xlsx` sin convertirlos. Las macros **no se ejecutan**: el navegador solo lee los datos de las hojas necesarias usando la biblioteca JSZip incluida localmente.
+El inventario pasado sigue siendo la base: si el conteo se hizo el 8 de noviembre y la recepción es el 10, se descuentan **dos días** de consumo. El cálculo no asume recepciones que no estén registradas como existencias en tránsito. Si el stock proyectado es negativo, la aplicación lo señala como riesgo de agotamiento previo a la entrega. Se debe comprobar la precisión de registros, uso, entradas y paquetes antes de colocar un pedido real.
 
-| Motor | Hojas utilizadas | Función |
-|---|---|---|
-| 01 | `venta_dia_base` (o `venta_dia_ac`) | Transacciones y venta diaria, **solo como contexto** |
-| 02 | `uso_ac` (o `uso_base`), `stock_base` | **Fuente principal del uso ideal diario** y catálogo de stock |
-| 03 | `detalleventa_base`, `producto_base` | Movimiento y tendencia de productos vendidos, **sin convertirlos en consumo de insumos** |
+**Máximos y mínimos**: mínimo = consumo para llegar a la recepción + seguridad; máximo = consumo para llegar a la recepción, más hasta la siguiente recepción, más seguridad. Se adaptan a la fecha de entrega elegida. La app no replica ni certifica fórmulas propietarias del sistema original.
 
-Si vuelves a cargar el Motor 02, la aplicación **filtra los registros por el ID de tienda activo**. Los registros de otras sucursales se omiten y se indica su cantidad. No cruza claves solo por el número del identificador.
+### Ejemplo reproducible de pastel de chocolate
 
-### Actualizar inventario
+Suponiendo **lunes 9/11/2026**, **12 piezas disponibles hoy**, **4.8 piezas vendidas al día**, entregas **martes y sábado**, seguridad **0 días** y compra por pieza:
 
-El primer inventario del PDF ya está convertido en el archivo privado de inicio. Para **inventarios posteriores**, utiliza el botón **Inventario inicial**, cargando un archivo `.xlsx`, `.xlsm` o `.csv` con columnas `SAP`, `Producto Descripción`, `PIEZAS`, `CANT. UNID.` y `UNIDAD` (con variantes usuales de estos nombres). También acepta un respaldo `.json` previamente exportado por la propia aplicación.
+| Pedido para entrega | Stock al llegar | Consumo hasta siguiente entrega | Pedir |
+|---|---:|---:|---:|
+| Martes 10/11 | 12 − 4.8 = 7.2 | 4 × 4.8 = 19.2 | **12 piezas** |
+| Sábado 14/11 (si se recibió el pedido del martes) | 0 | 3 × 4.8 = 14.4 | **15 piezas** |
 
-**En esta versión no se admite subir otro PDF directamente desde el navegador**; para actualizar el inventario desde un PDF nuevo, expórtalo primero al formato de Excel/CSV que produce tu herramienta de conteo. No es necesario convertir el PDF original ya incluido.
+El segundo cálculo es un escenario consecutivo: para simularlo en el pedido real, registra correctamente el stock o recepciones que hayan ocurrido desde el conteo anterior. La tabla inicial de la app muestra el mismo ejemplo, sin modificar ningún dato operativo.
 
-## 4. Conciliar códigos con seguridad
+### Botón «Borrar todo»
 
-Los distintos sistemas usan **tres identificadores distintos**: código SAP del inventario, `IDArticulo` de `uso_ac` y `IDArticulo` de `stock_base`.
+En la parte superior está **Borrar todo**. Pide confirmación antes de eliminar de ese navegador **motores, stock, calendario, consumos manuales, validaciones y ajustes**. Después reaparece el flujo inicial. Antes de borrar puedes guardar un **respaldo privado** opcional; el programa **nunca exige subir JSON** para comenzar.
 
-La conciliación propone coincidencias por similitud de nombre y mantiene separadas las unidades. La carga inicial contiene **46 enlaces sugeridos de alta similitud**, todavía sujetos a validación. En la pestaña **Conciliación**, puedes usar **Confirmar coincidencias seguras** o revisar artículo por artículo. El sistema nunca presenta un enlace pendiente como un pedido definitivo.
+## Limitaciones y resguardo de datos
 
-Para artículos no encontrados en el consumo diario, captura manualmente el **uso por día en la unidad de inventario**. En la tabla aparece una celda discreta **Capturar**, con borde punteado; también puedes entrar a **Editar** para asignar un ID de uso o escribir valores manuales. Estos artículos quedan marcados **Manual**, sin usar un color llamativo.
+- El cálculo es una **propuesta**, no coloca ni sincroniza pedidos con WOE.
+- La biblioteca JSZip se utiliza localmente. Las macros del Excel no se ejecutan.
+- Los ID SAP, `IDArticulo` de uso y `IDArticulo` de stock no se equiparan por número. Las coincidencias se sugieren por descripción y necesitan confirmación antes de ser elegibles para un pedido.
+- Para cantidades mixtas de piezas/kg/L, conversión incierta o múltiplos de compra especiales, se bloquea el pedido hasta completar la validación correspondiente.
+- Los datos y cambios se conservan localmente mediante almacenamiento del navegador cuando el entorno lo permite. Usa el botón de respaldo para conservar información entre navegadores o limpiar la sesión, y no publiques el respaldo.
+- Para descargar un PDF con el pedido, utiliza **Imprimir / PDF** y selecciona *Guardar como PDF* en el navegador.
 
-## 5. Stock en piezas, kg y litros
-
-El PDF tiene columnas **PIEZAS**, **CANT. UNID.** y **UNIDAD**. En varios productos, especialmente café o ingredientes que se pesan, aparecen valores simultáneos de piezas y kilogramos. **No se suman automáticamente**, porque sin una conversión validada sumar 2 bolsas + 3 kg sería incorrecto. Estos casos exigen confirmar el stock convertido a una unidad común.
-
-También se verifica la unidad de consumo del Motor 02:
-
-- Piezas a piezas: 1 a 1; blister por 3 piezas, cuando se indica explícitamente.
-- Litros: cantidades explícitas en litros o mililitros.
-- Kilogramos: cantidades explícitas en kg, g, libras u onzas de masa.
-- Si la unidad del motor no permite una conversión inequívoca, la sugerencia queda pendiente y puedes introducir el factor de conversión o el consumo diario manual.
-
-En productos cuyo inventario se expresa en **kg o litros**, se debe marcar **Verifiqué el stock convertido** antes de considerarlos listos. Si el cálculo indica que es necesario pedir, también debe capturarse un **múltiplo de compra** apropiado en kg/L, evitando pedidos fraccionarios imposibles de suministrar.
-
-Las equivalencias automáticas son **indicativas**: verifica las especificaciones del insumo, el empaque y el múltiplo de compra antes de enviar cualquier pedido.
-
-## 6. Fórmulas del cálculo
-
-Se usan parámetros editables (valores iniciales: **entrega 2 días, ciclo 4 días, seguridad 1 día, peso de últimos 7 días 70%**). El modelo es una propuesta transparente de **máximos y mínimos**, no una reproducción certificada de la lógica del sistema #GAS.
-
-- `Uso reciente = total de consumo convertido en últimos 7 días / 7`.
-- `Uso histórico = total convertido en últimos 28 días / 28`.
-- `Uso proyectado/día = 0.70 × uso reciente + 0.30 × uso histórico`.
-- `Mínimo = uso proyectado/día × (días de entrega + días de seguridad)`.
-- `Máximo = uso proyectado/día × (días de entrega + días de ciclo + días de seguridad)`.
-- Si `stock validado + recepciones en tránsito <= mínimo`, proponer `máximo − (stock + recepciones)` redondeado al **múltiplo configurado**. Si no, proponer cero.
-
-Cuando el artículo tiene historial corto, un vínculo no confirmado, una conversión sin validar o stock mixto, **no genera pedido definitivo**. El uso manual se conserva separado de los valores obtenidos del motor.
-
-**Observación:** los datos provienen de hojas con consumo ideal, no de una receta certificada ni de una garantía de disponibilidad. Revisa variaciones, promociones, campañas estacionales, pedidos pendientes y calendario de recepción antes de colocar una orden real.
-
-## 7. Exportación y respaldos
-
-- **Exportar Excel**: crea un `.xlsx` con cuatro hojas: `Pedido WOE` (solo cantidades validadas y mayores que cero), `Maximos y Minimos` (todos los 253 artículos), `Tendencia de Uso` (historial diario conciliado) y `Pendientes` (puntos por revisar).
-- **Imprimir / PDF**: utiliza la función nativa del navegador para imprimir o guardar como PDF. Se imprime la tabla de pedido de la vista de operación.
-- **Guardar respaldo privado**: descarga un archivo JSON que conserva inventario, motores procesados, ajustes por artículo y parámetros de pedido.
-
-## 8. Seguridad y limitaciones
-
-- No es una integración con WOE ni con servidores internos y **no envía órdenes automáticamente**. El Excel es un insumo para hacer y validar pedidos en el sistema oficial.
-- No transmite información por red ni requiere contraseñas. La biblioteca JSZip se incluye en `vendor/` bajo licencia MIT.
-- Los datos quedan en el almacenamiento local de cada navegador, no son compartidos automáticamente entre equipos. En un equipo compartido, elimina los datos del sitio desde la configuración del navegador al terminar.
-- El documento HTML original de #GAS estaba guardado sin los archivos JavaScript externos necesarios para certificar su fórmula de cálculo. Este proyecto implementa explícitamente su propia metodología de pronóstico y niveles de stock.
-- Puedes usar el repositorio GitHub **público para el código**, pero los archivos iniciales y de respaldo deben mantenerse **privados**.
-
----
-
-Versión inicial: 9 de noviembre de 2026. Probado con los tres `.xlsm` facilitados, con el PDF del inventario y con la exportación del Excel de salida.
+Versión 2 · 9 de noviembre de 2026.

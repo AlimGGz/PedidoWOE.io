@@ -12,3 +12,39 @@
 @media print{.sidebar{display:none!important}}
 
 @media print{#mainBody tr[data-order="0"]{display:none!important}}
+/* Calendario de entregas y secuencia de carga (versión 2) */
+.reset-all{border:1px solid #ead2c9;background:#fffaf7;color:#9d4f39;font-weight:750;font-size:11px;padding:9px 12px;border-radius:9px;min-height:35px}
+.reset-all:hover{background:#fff0e9;border-color:#d49c88}
+.source-stage{grid-column:1/-1;color:#7b9180;font-size:10px;font-weight:800;letter-spacing:.09em;padding:7px 0 2px}
+.source-card.extra-source{grid-column:1/-1;min-height:100px;max-width:100%;background:#f7faf5}
+.source-card.locked{opacity:.52;cursor:not-allowed;border-style:dashed}
+.source-card.locked:hover{transform:none;border-color:#dfe9df}
+.lock-hint{font-size:10px;color:#7b9180;margin-top:7px}
+.calendar-grid{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(145px,1fr));gap:13px;align-items:end}
+.calendar-grid>label,.calendar-days{font-size:11px;color:#45664d;font-weight:750;display:flex;flex-direction:column;gap:7px;min-width:0}
+.calendar-grid small{display:block;font-size:10px;line-height:1.35;font-weight:400;color:#94a496;min-height:26px}
+.calendar-grid input[type=date],.calendar-grid input[type=number],.calendar-grid select{width:100%;height:42px;border:1px solid #dce6da;background:#fff;border-radius:9px;padding:0 11px;color:#234b32;font-size:12px;min-width:0}
+.calendar-grid input[readonly]{background:#f0f5ef;color:#52745e}
+.field-label{font-size:11px;color:#45664d;font-weight:750}
+.days-selector{display:flex;gap:5px;align-items:stretch;min-height:43px}
+.days-selector label{display:flex;flex:1;min-width:0;cursor:pointer;position:relative}
+.days-selector input{position:absolute;opacity:0;pointer-events:none}
+.days-selector span{display:flex;flex:1;align-items:center;justify-content:center;min-width:0;background:#f5f8f3;border:1px solid #d8e5d7;color:#5f8069;border-radius:8px;font-size:10px;transition:background .15s,color .15s}
+.days-selector input:checked+span{background:#006241;color:white;border-color:#006241;font-weight:780}
+.days-selector input:focus-visible+span{outline:3px solid #a2d6b6;outline-offset:1px}
+.secondary-grid{margin-top:15px;grid-template-columns:minmax(170px,1fr) minmax(170px,1fr) minmax(300px,2.3fr);align-items:stretch}
+.calendar-summary{display:flex;flex-direction:column;gap:7px;background:#edf5ec;border:1px solid #d5e9d5;border-radius:10px;padding:13px 15px;color:#44694f;font-size:11px;line-height:1.5}
+.calendar-summary strong{color:#205638;font-size:12px}
+.calendar-summary span{color:#67866a}
+.example-wrap{margin:0 0 26px;padding:17px 19px;border:1px solid #dfe8dc;background:#fbfcf9;border-radius:12px}
+.example-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.example-grid>div{background:white;padding:13px 16px;border:1px solid #e1ebe0;border-radius:10px}
+.example-grid small{font-size:10px;font-weight:700;color:#68846c;display:block}
+.example-grid strong{display:block;font-size:25px;color:#006241;letter-spacing:-.6px;margin-top:5px}
+.example-grid p{font-size:11px;color:#718773;line-height:1.5;margin:6px 0 0}
+.risk-text{color:#bd643e;font-weight:800}
+.print-meta{font-size:12px;color:#637d69;margin-top:9px}
+@media(max-width:1250px){.calendar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.secondary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.calendar-summary{grid-column:1/-1}.days-selector{min-height:41px}}
+@media(max-width:700px){.calendar-grid{grid-template-columns:1fr 1fr;gap:12px}.calendar-days{grid-column:1/-1}.secondary-grid{grid-template-columns:1fr 1fr}.source-card.extra-source{grid-column:1/-1}.example-grid{grid-template-columns:1fr}.days-selector{gap:4px}.reset-all{padding:7px 8px;font-size:10px}.top-actions{gap:7px}}
+@media(max-width:400px){.calendar-grid{grid-template-columns:1fr}.calendar-days,.calendar-summary{grid-column:1/-1}.secondary-grid{grid-template-columns:1fr 1fr}.secondary-grid .calendar-summary{grid-column:1/-1}}
+@media print{.example-wrap,.reset-all,.source-stage,.lock-hint,#calendarSettings{display:none!important}.print-meta{font-size:9pt;display:block}}

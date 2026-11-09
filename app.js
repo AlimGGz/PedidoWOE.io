@@ -4,11 +4,15 @@ const Core=window.WOECore;
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MXN=x=>Core.format(x,2);
-const EMPTY=()=>({version:1,storeId:'',storeName:'',inventoryGenerated:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]}});
+const EMPTY=()=>({version:1,storeId:'',storeName:'',inventoryGenerated:'',inventoryDate:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]}});
 let state={data:EMPTY(),settings:{...Core.DEFAULTS},overrides:{},view:'pedido'};
 let usageIndex=new Map(), currentDetail=null, editingOptions=[], changed=false;
 let filter={search:'',family:'',status:''};
-const LS='woe-pedidos-local-v1';
+const LS='woe-pedidos-local-v2';
+const todayLocal=()=>{const n=new Date();return [n.getFullYear(),String(n.getMonth()+1).padStart(2,'0'),String(n.getDate()).padStart(2,'0')].join('-');};
+const ES_DAYS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const longDate=d=>d?`${ES_DAYS[Core.weekday(d)]} ${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(0,4)}`:'—';
+const motorsReady=()=>['01','02','03'].every(id=>!!state.data['motor'+id]?.file);
 function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>t.classList.remove('show'),4200);}
 function scheduleSave(){changed=true;clearTimeout(scheduleSave._timer);scheduleSave._timer=setTimeout(()=>{try{localStorage.setItem(LS,JSON.stringify({data:state.data,settings:state.settings,overrides:state.overrides}));changed=false;}catch(e){toast('El navegador no pudo guardar automáticamente los datos. Descarga un respaldo privado para conservar tus cambios.');}},550);}
 function restore(){try{const saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved?.data?.inventory&&Array.isArray(saved.data.inventory)){state={...state,data:saved.data,settings:{...Core.DEFAULTS,...saved.settings},overrides:saved.overrides||{}};}}catch(e){console.warn('Sin sesión guardada',e);}reindex();}
@@ -25,17 +29,41 @@ function sourceStatus(){
   $('summary01').textContent=d.motor01?.sales?.length?`${d.motor01.sales.length} días de actividad y venta`:'Actividad y venta diaria';
   $('summary02').textContent=d.motor02?.usage?.length?`${d.motor02.usage.length.toLocaleString('es-MX')} registros tienda ${d.storeId||''}${d.motor02.excludedOtherStores?' · '+d.motor02.excludedOtherStores.toLocaleString('es-MX')+' excluidos':''}`:'Uso ideal diario de artículos';
   $('summary03').textContent=d.motor03?.sales?.length?`${d.motor03.sales.length.toLocaleString('es-MX')} combinaciones producto/día`:'Ventas por producto, sin duplicar insumos';
-  $('statusInv').textContent=haveData()?'Cargado':'Sin cargar';$('statusInv').classList.toggle('loaded',haveData());
+  $('statusInv').textContent=haveData()?'Cargado':motorsReady()?'Listo para subir':'Espera motores';$('statusInv').classList.toggle('loaded',haveData());
+  $('invInput').disabled=!motorsReady();document.querySelector('[data-step="inventory"]').classList.toggle('locked',!motorsReady());$('inventoryLockHint').textContent=motorsReady()?'Carga tu PDF o Excel de inventario':'Carga primero los 3 motores';
   const ts=d.inventoryGenerated?d.inventoryGenerated.slice(0,10):'';
-  $('sourceDate').textContent=ts?`Stock base: inventario generado el ${ts.split('-').reverse().join('/')}. El nombre del archivo puede mostrar otra fecha.`:'El inventario es la referencia para el stock inicial.';
+  $('sourceDate').textContent=ts?`Inventario ${state.data.inventoryFilename||''} · Fecha del conteo: ${state.data.inventoryDate||'pendiente'}`:'Paso 1: carga los 3 motores. Paso 2: selecciona el inventario inicial.';
   $('storeTag').textContent=d.storeId?`${d.storeId} · ${d.storeName||'Tienda'}`:'Sin datos';
 }
 function populateFamilies(){const families=[...new Set(state.data.inventory.map(x=>x.family))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   for(const id of ['familyFilter','levelFilter']){const sel=$(id),v=sel.value;sel.innerHTML='<option value="">Todas las familias</option>'+families.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');sel.value=families.includes(v)?v:'';}
 }
+function renderCalendar(){
+  const today=todayLocal();$('todayDate').value=today;
+  const weekdays=Array.isArray(state.settings.deliveryWeekdays)?state.settings.deliveryWeekdays:[];
+  document.querySelectorAll('#deliveryDays input').forEach(box=>box.checked=weekdays.includes(Number(box.value)));
+  const dates=Core.deliveryDates(today,weekdays,40);
+  if(!dates.includes(state.settings.receiptDate))state.settings.receiptDate=dates[0]||'';
+  const select=$('receiptDate');select.innerHTML=dates.length?dates.map(d=>`<option value="${d}">${longDate(d)}</option>`).join(''):'<option value="">Selecciona un día de entrega</option>';
+  select.value=state.settings.receiptDate;select.disabled=!dates.length;
+  $('inventoryDate').value=state.data.inventoryDate||'';
+  $('safetyDays').value=state.settings.safetyDays;
+  $('recentWeight').value=state.settings.recentWeight;
+  const current=state.settings.receiptDate,next=current?Core.nextDelivery(current,weekdays):'';
+  const until=current?Core.daysBetween(today,current):NaN;
+  const span=current&&next?Core.daysBetween(current,next):NaN;
+  $('calendarSummary').innerHTML=current?`<strong>Entrega seleccionada: ${longDate(current)}</strong><span>${until===0?'Se recibe hoy':until+' día(s) desde hoy'} · Siguiente entrega: ${longDate(next)} · Cobertura: ${span} día(s)</span>`:'Selecciona uno o más días de entrega.';
+}
+function renderExample(){
+  // Demostración fija y verificable, independiente del inventario real de la tienda.
+  const tue=Core.derive({sap:'EX',unit:'PZA',pieces:12,bulk:0},{data:{inventoryDate:'2026-11-09',motor02:{}},settings:{deliveryWeekdays:[2,6],receiptDate:'2026-11-10',safetyDays:0},overrides:{EX:{manual:4.8}}},new Map());
+  const sat=Core.derive({sap:'EX',unit:'PZA',pieces:0,bulk:0},{data:{inventoryDate:'2026-11-14',motor02:{}},settings:{deliveryWeekdays:[2,6],receiptDate:'2026-11-14',safetyDays:0},overrides:{EX:{manual:4.8}}},new Map());
+  $('exampleResult').innerHTML=`<div><small>Martes 10/11 · Cubrir hasta sábado</small><strong>${tue.order} piezas</strong><p>12 − 4.8 = ${Core.format(tue.position,1)} piezas al recibir. Se necesitan 19.2 para los siguientes 4 días.</p></div><div><small>Sábado 14/11 · Cubrir hasta martes</small><strong>${sat.order} piezas</strong><p>Si el pedido del martes se recibe y se consumen 4.8 por día, quedarán 0 piezas. Se requieren 14.4 para los siguientes 3 días.</p></div>`;
+}
 function render(){
-  sourceStatus();populateFamilies();$('onboarding').classList.toggle('hidden',haveData());
-  for(const [key,val] of Object.entries(state.settings)){if($(key))$(key).value=val;}
+  sourceStatus();populateFamilies();renderCalendar();renderExample();$('onboarding').classList.toggle('hidden',haveData());
+  $('exportBtn').disabled=!haveData();$('printBtn').disabled=!haveData();
+  $('printMeta').textContent=`Inventario: ${state.data.inventoryDate||'pendiente'} · Recepción: ${state.settings.receiptDate||'pendiente'} · Siguiente: ${state.settings.receiptDate?Core.nextDelivery(state.settings.receiptDate,state.settings.deliveryWeekdays):'—'}`;
   const rows=allResults();const ready=rows.filter(x=>x.ready).length;
   $('statProducts').textContent=Core.format(rows.length,0);$('statReady').textContent=Core.format(ready,0);$('statPending').textContent=Core.format(rows.length-ready,0);$('statOrder').textContent=Core.format(rows.filter(x=>x.order>0).length,0);
   renderTable(rows);renderLevels(rows);renderReconciliation(rows);renderTrendSelect(rows);renderContext();
@@ -57,7 +85,7 @@ function statusChip(r){
 function renderTable(rows){const q=$('searchInput').value||'';const fam=$('familyFilter').value;const status=$('statusFilter').value;
   const display=rows.filter(r=>includesQuery(r,q)&&(!fam||r.item.family===fam)&&(!status||(status==='manual'?!r.linkId&&!r.manual:status==='pendiente'?!r.ready:status==='pedido'?r.order>0:r.ready)));
   $('tableCount').textContent=`${display.length} de ${rows.length} artículos`;
-  $('mainBody').innerHTML=display.map(r=>`<tr data-order="${r.order>0?1:0}"><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo diario manual en ${esc(r.item.unit)}" />`:Core.format(r.daily,3)}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<b>${Core.format(r.order,3)} ${esc(r.item.unit)}</b>`:'0'}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="8" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos.</td></tr>';
+  $('mainBody').innerHTML=display.map(r=>`<tr data-order="${r.order>0?1:0}"><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.position===null?'—':`<span class="${r.risk?'risk-text':''}">${Core.format(r.position,2)} ${esc(r.item.unit)}</span>`}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo diario manual en ${esc(r.item.unit)}" />`:Core.format(r.daily,3)}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<b>${Core.format(r.order,3)} ${esc(r.item.unit)}</b>`:'0'}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('')||'<tr><td colspan="9" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos.</td></tr>';
 }
 function renderLevels(rows){const q=$('levelSearch').value||'';const family=$('levelFilter').value;const d=rows.filter(r=>includesQuery(r,q)&&(!family||r.item.family===family));
  $('levelsBody').innerHTML=d.map(r=>`<tr><td>${itemLabel(r)}</td><td class="numeric">${r.daily===null?'—':Core.format(r.daily,3)}</td><td class="numeric">${r.min===null?'—':Core.format(r.min,3)}</td><td class="numeric">${r.max===null?'—':Core.format(r.max,3)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.coverage===null?'—':r.coverage===Infinity?'>99':Core.format(r.coverage,1)}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('');
@@ -134,7 +162,7 @@ function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=i
 }
 function updateDetailMath(){if(!currentDetail)return;const item=detailItem();const temp={...state,overrides:{...state.overrides,[currentDetail]:readDetailForm()}};
   const r=Core.derive(item,temp,usageIndex);
-  $('detailMath').innerHTML=`<strong>Previsualización</strong><div>Uso estimado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(item.unit)+'/día'}</strong></div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'Necesita revisión':Core.format(r.order,3)+' '+esc(item.unit)}</strong></div>`;
+  $('detailMath').innerHTML=`<strong>Previsualización</strong><div>Uso estimado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(item.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} · Necesario hasta siguiente entrega: ${Core.format(r.required,3)}</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'Necesita revisión':Core.format(r.order,3)+' '+esc(item.unit)}</strong></div>`;
   $('detailWarnings').textContent=r.reasons.length?r.reasons.join(' · '):'El artículo tiene los datos necesarios para calcular el pedido.';
 }
 function closeDetail(){$('detailOverlay').classList.add('hidden');currentDetail=null;}
@@ -151,51 +179,56 @@ async function openWorkbook(file){if(!window.JSZip)throw Error('No se encuentra 
   const wbdoc=xmlText(await wb.async('string'));
   const relation=zip.file('xl/_rels/workbook.xml.rels');const relMap=new Map();
   if(relation){const rel=xmlText(await relation.async('string'));for(const node of rel.getElementsByTagName('Relationship'))relMap.set(node.getAttribute('Id'),node.getAttribute('Target'));}
-  const sheets=new Map();const sheetsEl=wbdoc.getElementsByTagName('sheet');
+  const sheets=new Map();const sheetsEl=wbdoc.getElementsByTagNameNS('*','sheet');
   for(const sheet of sheetsEl){const name=sheet.getAttribute('name');const rid=sheet.getAttribute('r:id')||sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
     let path=relMap.get(rid)||'';path=path.replace(/^\//,'').replace(/^xl\//,'');if(path.startsWith('worksheets/'))path='xl/'+path;else if(!path.startsWith('xl/'))path='xl/'+path;
     sheets.set(name,path);
   }
   const shared=zip.file('xl/sharedStrings.xml');const strings=[];
-  if(shared){const doc=xmlText(await shared.async('string'));for(const si of doc.getElementsByTagName('si')){let txt='';for(const t of si.getElementsByTagName('t'))txt+=t.textContent||'';strings.push(txt);}}
+  if(shared){const doc=xmlText(await shared.async('string'));for(const si of doc.getElementsByTagNameNS('*','si')){let txt='';for(const t of si.getElementsByTagNameNS('*','t'))txt+=t.textContent||'';strings.push(txt);}}
   return {zip,sheets,strings};
 }
-const cellRE=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
-const rowRE=/<row\b[^>]*>([\s\S]*?)<\/row>/g;
+const cellRE=/<(?:[a-zA-Z_][\w.-]*:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[a-zA-Z_][\w.-]*:)?c>)/g;
+const rowRE=/<(?:[a-zA-Z_][\w.-]*:)?row\b[^>]*>([\s\S]*?)<\/(?:[a-zA-Z_][\w.-]*:)?row>/g;
 const validNum=/^-?\d+(?:\.\d+)?(?:e[-+]?\d+)?$/i;
 function decodeXml(s){return s.replace(/&(?:amp|lt|gt|quot|apos|#\d+|#x[\da-f]+);/gi,c=>{
   if(c==='&amp;')return '&';if(c==='&lt;')return '<';if(c==='&gt;')return '>';if(c==='&quot;')return '"';if(c==='&apos;')return "'";
   const n=c.startsWith('&#x')?parseInt(c.slice(3,-1),16):parseInt(c.slice(2,-1),10);return Number.isFinite(n)?String.fromCodePoint(n):c;
  });}
-function eachRow(xml,strings,handler){let header=null,rowMatch,idx=0;rowRE.lastIndex=0;
+function eachRow(xml,strings,handler,opts={}){let header=null,rowMatch,idx=0;rowRE.lastIndex=0;
   while((rowMatch=rowRE.exec(xml))!==null){const cells={},raw=rowMatch[1];cellRE.lastIndex=0;let cm;
     while((cm=cellRE.exec(raw))!==null){const attrs=cm[1],inner=cm[2]||'';const col=(attrs.match(/\br="([A-Z]+)\d+"/)||[])[1];if(!col)continue;
-      const t=(attrs.match(/\bt="([^"]+)"/)||[])[1];let v=(inner.match(/<v>([\s\S]*?)<\/v>/)||[])[1];
-      if(t==='inlineStr'){v=decodeXml((inner.match(/<t[^>]*>([\s\S]*?)<\/t>/)||[])[1]||'');}
+      const t=(attrs.match(/\bt="([^"]+)"/)||[])[1];let v=(inner.match(/<(?:[a-zA-Z_][\w.-]*:)?v>([\s\S]*?)<\/(?:[a-zA-Z_][\w.-]*:)?v>/)||[])[1];
+      if(t==='inlineStr'){v=decodeXml((inner.match(/<(?:[a-zA-Z_][\w.-]*:)?t[^>]*>([\s\S]*?)<\/(?:[a-zA-Z_][\w.-]*:)?t>/)||[])[1]||'');}
       else if(t==='s'){v=v==null?'':(strings[Number(v)]??'');}
       else if(v!=null&&validNum.test(v)){v=Number(v);}
       else if(v==null){continue;}
+      else if(typeof v==='string')v=decodeXml(v);
       cells[col]=v;
     }
-    if(!header){header=cells;idx++;continue;}
+    if(!header){const cols=Object.values(cells).map(Core.norm);if(opts.detectInventory&&!(cols.some(x=>/^(SAP|CODIGO SAP)$/.test(x))&&cols.some(x=>/PRODUCTO|DESCRIPCION/.test(x)))){idx++;continue;}header=cells;idx++;continue;}
     const out={};for(const [col,title] of Object.entries(header)){if(title!==undefined)out[String(title).trim()]=cells[col]??null;}
     handler(out,idx++);
   }
   return idx;
 }
-async function sheetRows(wb,preferred,handler){let name=preferred.find(n=>wb.sheets.has(n));if(!name)throw Error('No se encontró la hoja requerida: '+preferred.join(' o '));
+async function sheetRows(wb,preferred,handler,opts={}){let name=preferred.find(n=>wb.sheets.has(n));if(!name)throw Error('No se encontró la hoja requerida: '+preferred.join(' o '));
   const filepath=wb.sheets.get(name);const zipFile=wb.zip.file(filepath);
   if(!zipFile)throw Error('No se pudo abrir la hoja '+name+' ('+filepath+').');
-  const xml=await zipFile.async('string');let count=eachRow(xml,wb.strings,handler);return {name,count:Math.max(0,count-1)};
+  const xml=await zipFile.async('string');let count=eachRow(xml,wb.strings,handler,opts);return {name,count:Math.max(0,count-1)};
 }
 function storeGuard(rawStore,fileName){const target=state.data.storeId;if(target&&rawStore&&String(Number(rawStore))!==String(Number(target)))throw Error(`${fileName} corresponde a la tienda ${rawStore}, no a ${target}. No se mezclaron los datos.`);}
 async function uploadMotor(n,file){let out;
   const wb=await openWorkbook(file);
   if(n==='01'){
-    const sales=[];await sheetRows(wb,['venta_dia_base','venta_dia_ac'],r=>{storeGuard(r.IDTienda,file.name);const date=Core.dayFromExcel(r.Fecha);if(date&&r.Transacciones!=null)sales.push({date,trxs:Number(r.Transacciones)||0,sales:Number(r.VentaNeta)||0});});
+    const sales=[],stores=new Set();await sheetRows(wb,['venta_dia_base','venta_dia_ac'],r=>{if(r.IDTienda!=null)stores.add(String(Number(r.IDTienda)));storeGuard(r.IDTienda,file.name);const date=Core.dayFromExcel(r.Fecha);if(date&&r.Transacciones!=null)sales.push({date,trxs:Number(r.Transacciones)||0,sales:Number(r.VentaNeta)||0});});
     if(!sales.length)throw Error('El Motor 01 no contiene filas de venta diaria.');
+    if(stores.size!==1)throw Error('El Motor 01 contiene varias tiendas. Es necesario seleccionar un motor de una sola tienda.');
+    const detected=[...stores][0];if(state.data.storeId&&state.data.storeId!==detected)throw Error('Los motores corresponden a tiendas diferentes.');
+    state.data.storeId=detected;
     sales.sort((a,b)=>a.date.localeCompare(b.date));out={file:file.name,sales};
   }else if(n==='02'){
+    if(!state.data.storeId)throw Error('Carga primero el Motor 01 para identificar la tienda y evitar mezclar consumos.');
     const usage=[];const catalog=new Map();const stockCatalog=[];let asOf='',excludedOtherStores=0;
     await sheetRows(wb,['uso_ac','uso_base'],r=>{
       if(state.data.storeId&&String(Number(r.IDTienda))!==String(Number(state.data.storeId))){excludedOtherStores++;return;}
@@ -208,23 +241,9 @@ async function uploadMotor(n,file){let out;
     await sheetRows(wb,['stock_base'],r=>{const id=String(r.IDArticulo??'');if(id)stockCatalog.push({id,name:String(r.NombreArticuloStock||''),group:String(r.GrupoMayor||''),category:String(r.ClasificacionStock||''),unit:String(r.UnidadStock||''),pickPack:String(r.PickPack||'')});});
     if(!usage.length||!stockCatalog.length)throw Error('El Motor 02 no contiene el uso ideal o catálogo de stock.');
     out={file:file.name,asOf,usage,articles:stockCatalog,usageCatalog:[...catalog.values()],excludedOtherStores};
-    // Reconciliar las sugerencias contra el catálogo nuevo, sin equiparar IDs entre hojas.
-    const ids=new Set(out.usageCatalog.map(x=>x.id));
-    for(const item of state.data.inventory){
-      item.suggestions=(item.suggestions||[]).filter(x=>ids.has(String(x.id)));
-      if(item.autoLink&&!ids.has(String(item.autoLink)))delete item.autoLink;
-      if(!item.suggestions.length){
-        const normalized=Core.norm(item.name).replace(/\b(?:CJ|PZAS?|PZA|BTE|CJA|KG|LT|MLS?)\b/g,'').trim();
-        const tokens=new Set(normalized.split(' ').filter(x=>x.length>=4&&!/^\d+$/.test(x)));
-        item.suggestions=out.usageCatalog.map(x=>{
-          const t=new Set(Core.norm(x.name).split(' ').filter(v=>v.length>=4&&!/^\d+$/.test(v)));
-          const overlap=[...tokens].filter(k=>t.has(k)).length;
-          return {id:x.id,name:x.name,usageUnit:x.usageUnit,score:Math.round(100*overlap/Math.max(1,tokens.size,t.size))};
-        }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,4);
-      }
-    }
-    // Los enlaces no disponibles quedan pendientes, nunca se reasignan sin confirmación.
+    // Los vínculos se proponen después, cuando esté el PDF del inventario.
   }else if(n==='03'){
+    if(!state.data.storeId)throw Error('Carga primero el Motor 01 para validar el número de tienda.');
     const catalog={};await sheetRows(wb,['producto_base'],r=>{const id=r.IDProducto;if(id!=null)catalog[String(id)]={name:String(r.Descripcion||''),family:String(r.DescripcionFam||''),category:String(r.CatDescripcion||'')};});
     const aggregate=new Map();await sheetRows(wb,['detalleventa_base'],r=>{storeGuard(r.IDTienda,file.name);
       const day=Core.dayFromExcel(r.FechaHora);const id=String(r.IDProducto??'');if(!day||!id||!/^[0-9]+$/.test(id))return;
@@ -234,7 +253,18 @@ async function uploadMotor(n,file){let out;
     out={file:file.name,posCatalog:catalog,sales:[...aggregate].map(([key,qty])=>{const [day,id]=key.split('~');return [day,id,Math.round(qty*1e4)/1e4];})};
   }
   state.data['motor'+n]=out;
+  if(n==='02'&&haveData())rebuildSuggestions();
   reindex();scheduleSave();render();toast(`Motor ${n} actualizado: ${file.name}`+(n==='02'&&out.excludedOtherStores?' · '+out.excludedOtherStores+' registros de otras tiendas excluidos.':''));
+}
+function rebuildSuggestions(){
+ const catalog=state.data.motor02?.usageCatalog||[];
+ const ids=new Set(catalog.map(x=>String(x.id)));
+ for(const item of state.data.inventory){
+   item.suggestions=window.WOEMatcher.suggest(item,catalog);
+   delete item.autoLink;
+   const best=item.suggestions[0],second=item.suggestions[1];
+   if(best&&best.score>=86&&(!second||best.score-second.score>=9)&&Core.unitFactor(item.unit,best.usageUnit)>0)item.autoLink=best.id;
+ }
 }
 // ---------- INVENTARIO Y RESPALDOS ----------
 function validatePrivate(obj){return obj&&Array.isArray(obj.inventory)&&obj.inventory.every(p=>p.sap&&p.unit);}
@@ -253,8 +283,8 @@ function parseCsv(text){const result=[],raw=text.replace(/^\ufeff/,'');let cells
 }
 function normalizeInventoryRows(rows){if(!rows.length)throw Error('Archivo de inventario vacío.');const records=[];
   for(const row of rows){const mapped={};for(const [k,v] of Object.entries(row))mapped[Core.norm(k)]=v;
-    const sap=String(mapped.SAP||mapped.CODIGO_SAP||mapped.CODIGO||'').replace(/\.0$/,'').trim();if(!/^\d{5,8}$/.test(sap))continue;
-    const name=String(mapped['PRODUCTO DESCRIPCION']||mapped['PRODUCTO']||mapped['DESCRIPCION']||mapped['ITEM NAME']||'').replace(/^\d+\s*[-–]\s*/,'');
+    const sap=String(mapped.SAP||mapped['CODIGO SAP']||mapped.CODIGO||'').replace(/\.0$/,'').trim();if(!/^\d{5,8}$/.test(sap))continue;
+    const name=String(mapped['PRODUCTO DESCRIPCION']||mapped['PRODUCTO']||mapped['DESCRIPCION']||mapped['ITEM NAME']||mapped['PRODUCTO DESCRIPCION COMPLETA']||'').replace(/^\d+\s*[-–]\s*/,'');
     const qty=x=>{if(x==null||x==='—'||x==='')return null;const normalized=String(x).replace(/,/g,'');return Number.isFinite(Number(normalized))?Number(normalized):null;};
     const unit=String(mapped.UNIDAD||mapped.UM||'PZA').trim().toUpperCase().replace(/\W/g,'')||'PZA';
     const pieces=qty(mapped.PIEZAS??mapped['CANTIDAD PIEZAS']??mapped.CANTIDAD??null);
@@ -264,20 +294,28 @@ function normalizeInventoryRows(rows){if(!rows.length)throw Error('Archivo de in
   }
   if(!records.length)throw Error('No se detectaron columnas SAP, producto y piezas en el inventario.');
   const original=new Map(state.data.inventory.map(i=>[i.sap,i]));let updated=0,added=0;
-  for(const entry of records){const prev=original.get(entry.sap);if(prev){Object.assign(prev,{...entry,name:entry.name||prev.name,unit:entry.unit||prev.unit});updated++;}
-    else{state.data.inventory.push({...entry,packHint:1,suggestions:[]});added++;}}
-  state.data.inventory.sort((a,b)=>(a.family||'').localeCompare(b.family||'','es')||a.sap.localeCompare(b.sap));
-  state.data.inventoryGenerated=new Date().toISOString();return {updated,added};
-}
-async function uploadInventory(file){if(file.name.toLowerCase().endsWith('.json')){loadSession(JSON.parse(await file.text()));return;}
-  let rows=[];
-  if(file.name.toLowerCase().endsWith('.csv')){const matrix=parseCsv(await file.text());const h=(matrix.shift()||[]).map(String);rows=matrix.map(r=>Object.fromEntries(h.map((col,i)=>[col,r[i]??''])));}
-  else{const wb=await openWorkbook(file);const first=[...wb.sheets.keys()];let lastError=null;
-    for(const name of first.slice(0,6)){let test=[];try{await sheetRows(wb,[name],r=>test.push(r));normalizeInventoryRows(test);rows=null;break;}catch(e){lastError=e;}}
-    if(rows)throw lastError||Error('No se encontró tabla de inventario válida.');
+  const next=new Map();for(const entry of records){const prev=original.get(entry.sap);
+    if(prev){next.set(entry.sap,{...prev,...entry,name:entry.name||prev.name});updated++;}
+    else{next.set(entry.sap,{...entry,packHint:1,suggestions:[]});added++;}
   }
-  if(rows){const {updated,added}=normalizeInventoryRows(rows);toast(`${updated} artículos actualizados y ${added} agregados.`);}
-  scheduleSave();render();
+  state.data.inventory=[...next.values()].sort((a,b)=>(a.family||'').localeCompare(b.family||'','es')||a.sap.localeCompare(b.sap));
+  state.overrides=Object.fromEntries(Object.entries(state.overrides).filter(([sap])=>next.has(sap)));
+  rebuildSuggestions();return {updated,added,total:next.size};
+}
+async function uploadInventory(file){
+  if(!motorsReady())throw Error('Carga los 3 motores Excel antes del inventario inicial.');
+  let rows=[],date='';const ext=file.name.toLowerCase();
+  if(ext.endsWith('.pdf')){const parsed=await window.WOEPdfInventory.parse(file);rows=parsed.rows;date=parsed.date;}
+  else if(ext.endsWith('.csv')){const matrix=parseCsv(await file.text());const h=(matrix.shift()||[]).map(String);rows=matrix.map(r=>Object.fromEntries(h.map((col,i)=>[col,r[i]??''])));}
+  else if(ext.endsWith('.xlsm')||ext.endsWith('.xlsx')){const wb=await openWorkbook(file);const sheets=[...wb.sheets.keys()];let lastError=null;
+    for(const name of sheets.slice(0,8)){let test=[];try{await sheetRows(wb,[name],r=>test.push(r),{detectInventory:true});
+      const matched=normalizeInventoryRows(test);if(matched.total){rows=null;break;}
+    }catch(e){lastError=e;}}
+    if(rows)throw lastError||Error('No se encontró tabla de inventario válida.');
+  }else throw Error('Formato de inventario no compatible; selecciona PDF, XLSX, XLSM o CSV.');
+  let info={};if(rows)info=normalizeInventoryRows(rows);
+  state.data.inventoryDate=date||todayLocal();state.data.inventoryGenerated=date?date+'T00:00:00':new Date().toISOString();state.data.inventoryFilename=file.name;
+  scheduleSave();render();toast(`Inventario cargado: ${state.data.inventory.length} artículos. Confirma la fecha del conteo (${state.data.inventoryDate}).`);
 }
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),6000);}
 function saveBackup(){if(!haveData()){toast('Carga primero tus datos iniciales.');return;}
@@ -317,13 +355,13 @@ async function createXlsx(sheets){const zip=new JSZip(),ns='http://schemas.openx
 }
 async function exportXlsx(){if(!haveData()){toast('Primero carga el inventario.');return;}
   $('exportBtn').disabled=true;try{
-    const rows=allResults();const date=new Date().toISOString().slice(0,10);
-    const sheet1=[['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date],['Importante: revisar los códigos, cantidades, paquetes y unidades antes de solicitar.'],[],['SAP','Producto','Familia','Unidad','Stock','En tránsito','Uso diario','Mínimo','Máximo','Cantidad a solicitar','Múltiplo','Origen','Nota']];
-    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([r.item.sap,r.item.name,r.item.family,r.item.unit,r.stock,r.inbound,r.daily,r.min,r.max,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.override.note||'']);
-    const sheet2=[['SAP','Producto','Familia','Stock validado','Unidad','Uso diario','Mínimo','Máximo','Cobertura días','Pedido','Estado','Motivo pendiente']];
+    const rows=allResults();const date=todayLocal();
+    const sheet1=[['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date],['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],['Inventario contado: '+state.data.inventoryDate+' · Revisar códigos, cantidades y múltiplos antes de solicitar.'],['SAP','Producto','Familia','Unidad','Stock inicial','Stock a recepción','En tránsito','Uso diario','Mínimo','Máximo','Cantidad a solicitar','Múltiplo','Origen','Nota']];
+    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([r.item.sap,r.item.name,r.item.family,r.item.unit,r.stock,r.position,r.inbound,r.daily,r.min,r.max,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.override.note||'']);
+    const sheet2=[['SAP','Producto','Familia','Stock inicial','Unidad','Uso diario','Mínimo','Máximo','Cobertura días','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido','Estado','Motivo pendiente']];
     const sheet3=[['SAP','Producto','Fecha','Uso convertido a unidad del inventario','Unidad','Origen','ID de uso']];
     const sheet4=[['SAP','Producto','Razón de revisión','ID uso propuesto','Confianza de nombre']];
-    for(const r of rows){sheet2.push([r.item.sap,r.item.name,r.item.family,r.stock,r.item.unit,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.order,r.ready?'Validado':'Pendiente',r.reasons.join('; ')]);
+    for(const r of rows){sheet2.push([r.item.sap,r.item.name,r.item.family,r.stock,r.item.unit,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.position,r.receipt,r.next,r.order,r.ready?'Validado':'Pendiente',r.reasons.join('; ')]);
       if(r.series?.valid)for(const p of r.series.series)sheet3.push([r.item.sap,r.item.name,p.date,p.value,r.item.unit,r.manual?'Manual':'Motor 02',r.linkId]);
       if(!r.ready)sheet4.push([r.item.sap,r.item.name,r.reasons.join('; '),r.item.suggestions?.[0]?.id||'',r.item.suggestions?.[0]?.score||0]);
     }
@@ -336,19 +374,25 @@ function init(){restore();render();
   document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
   $('gotoFiles').addEventListener('click',()=>{$('sources').classList.remove('hidden');$('filesSection').scrollIntoView({behavior:'smooth'});});
   $('toggleFiles').addEventListener('click',()=>{const hidden=$('sources').classList.toggle('hidden');$('toggleFiles').textContent=hidden?'Mostrar fuentes ⌄':'Ocultar fuentes ⌃';});
-  $('onboardingImport').addEventListener('click',()=>$('sessionInput').click());
-  $('sessionInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{loadSession(JSON.parse(await f.text()));}catch(err){console.error(err);toast('No se pudo cargar el archivo: '+err.message);}e.target.value='';});
+  $('onboardingImport').addEventListener('click',()=>{$('filesSection').scrollIntoView({behavior:'smooth'});});
   for(const id of ['01','02','03'])$('motor'+id+'Input').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const status=$('status'+id);status.textContent='Procesando…';status.classList.remove('loaded');
     // Dejar pintar al navegador antes del procesamiento de hojas voluminosas.
     await new Promise(resolve=>setTimeout(resolve,40));
     try{await uploadMotor(id,f);}catch(err){console.error(err);sourceStatus();toast('Motor '+id+': '+err.message);}e.target.value='';});
   $('invInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await uploadInventory(f);}catch(err){console.error(err);toast('Inventario: '+err.message);}e.target.value='';});
   $('backupBtn').addEventListener('click',saveBackup);$('exportBtn').addEventListener('click',exportXlsx);$('printBtn').addEventListener('click',()=>{if(!haveData()){toast('Carga primero los datos iniciales.');return;}window.print();});
-  $('helpBtn').addEventListener('click',()=>toast('Importa los datos privados, concilia códigos y revisa consumos y stock. Los pedidos se calculan solo con datos validados.'));
-  $('resetConfigBtn').addEventListener('click',()=>{state.settings={...Core.DEFAULTS};scheduleSave();render();toast('Parámetros restablecidos.');});
-  for(const key of ['leadDays','cycleDays','safetyDays','recentWeight'])$(key).addEventListener('change',()=>{
-    const v=Number($(key).value);const mins={leadDays:0,cycleDays:1,safetyDays:0,recentWeight:0};const maxes={leadDays:30,cycleDays:60,safetyDays:30,recentWeight:100};
-    state.settings[key]=Math.min(maxes[key],Math.max(mins[key],Number.isFinite(v)?v:Core.DEFAULTS[key]));
+  $('helpBtn').addEventListener('click',()=>toast('Carga Motor 01, Motor 02, Motor 03 y el inventario PDF o Excel. Después selecciona días y fecha de recepción.'));
+  $('resetConfigBtn').addEventListener('click',()=>{state.settings={...Core.DEFAULTS,deliveryWeekdays:[...Core.DEFAULTS.deliveryWeekdays]};scheduleSave();render();toast('Calendario restablecido.');});
+  $('resetAllBtn').addEventListener('click',()=>{if(!window.confirm('¿BORRAR TODOS LOS DATOS? Se eliminarán motores, inventario, calendario, consumos manuales y asociaciones guardados en este navegador. Esta acción no se puede deshacer.'))return;clearTimeout(scheduleSave._timer);try{localStorage.removeItem(LS);localStorage.removeItem('woe-pedidos-local-v1');}catch(e){}state={data:EMPTY(),settings:{...Core.DEFAULTS,deliveryWeekdays:[...Core.DEFAULTS.deliveryWeekdays]},overrides:{},view:'pedido'};reindex();render();switchView('pedido');toast('Se borraron todos los datos. Carga los motores para empezar de nuevo.');});
+  document.querySelectorAll('#deliveryDays input').forEach(box=>box.addEventListener('change',()=>{
+    state.settings.deliveryWeekdays=[...document.querySelectorAll('#deliveryDays input:checked')].map(x=>Number(x.value));
+    state.settings.receiptDate='';scheduleSave();render();
+  }));
+  $('receiptDate').addEventListener('change',e=>{state.settings.receiptDate=e.target.value;scheduleSave();render();});
+  $('inventoryDate').addEventListener('change',e=>{state.data.inventoryDate=e.target.value;scheduleSave();render();});
+  for(const key of ['safetyDays','recentWeight'])$(key).addEventListener('change',()=>{
+    const v=Number($(key).value);const maxes={safetyDays:30,recentWeight:100};
+    state.settings[key]=Math.min(maxes[key],Math.max(0,Number.isFinite(v)?v:Core.DEFAULTS[key]));
     scheduleSave();render();
   });
   for(const [id,fn] of [['searchInput',()=>renderTable(allResults())],['familyFilter',()=>renderTable(allResults())],['statusFilter',()=>renderTable(allResults())],['levelSearch',()=>renderLevels(allResults())],['levelFilter',()=>renderLevels(allResults())]])$(id).addEventListener(id.includes('Filter')?'change':'input',fn);

@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const DAY=86400000;
-  const DEFAULTS={leadDays:2,cycleDays:4,safetyDays:1,recentWeight:70};
+  const DEFAULTS={deliveryWeekdays:[2,6],receiptDate:"",safetyDays:0,recentWeight:70};
   const n=(v,fallback=null)=>v===''||v===null||v===undefined?fallback:(Number.isFinite(Number(v))?Number(v):fallback);
   const num=(v,d=0)=>n(v,d);
   const cleanDate=day=>/^\d{4}-\d\d-\d\d$/.test(String(day||''))?String(day):'';
@@ -13,6 +13,22 @@
     return new Date(ms).toISOString().slice(0,10);
   };
   const addDays=(day,delta)=>new Date(Date.parse(day+'T00:00:00Z')+delta*DAY).toISOString().slice(0,10);
+  const daysBetween=(from,to)=>{
+    if(!cleanDate(from)||!cleanDate(to))return NaN;
+    return Math.round((Date.parse(to+'T00:00:00Z')-Date.parse(from+'T00:00:00Z'))/DAY);
+  };
+  const weekday=day=>new Date(day+'T12:00:00Z').getUTCDay();
+  const deliveryDates=(from,weekdays,limit=28)=>{
+    const set=new Set((weekdays||[]).map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6));
+    if(!cleanDate(from)||!set.size)return [];
+    const result=[];
+    for(let i=0;i<100&&result.length<limit;i++){
+      const date=addDays(from,i);
+      if(set.has(weekday(date)))result.push(date);
+    }
+    return result;
+  };
+  const nextDelivery=(receipt,weekdays)=>deliveryDates(addDays(receipt,1),weekdays,1)[0]||'';
   const format=(v,dec=2)=>v==null||!Number.isFinite(v)?'—':new Intl.NumberFormat('es-MX',{minimumFractionDigits:0,maximumFractionDigits:dec}).format(v);
   const norm=(s)=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
   const round=(qty,unit)=>['PZA','UND','ST'].includes(unit)?Math.ceil(qty-1e-9):Math.ceil(qty*1000-1e-9)/1000;
@@ -95,30 +111,39 @@
     const stock=stockFromPdf(item,o),inbound=Math.max(0,num(o.inbound,0));
     const context={...state.data,_recentWeight:cfg.recentWeight};
     const series=getSeries(item,linkId,o,context,usageIndex);
-    let daily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
-    const shortageReasons=[];
-    if(stock===null)shortageReasons.push('Conciliar piezas y kg/L del inventario');
-    if(['L','KG'].includes(item.unit)&&!o.stockVerified)shortageReasons.push('Validar stock convertido a '+item.unit);
-    if(daily===null)shortageReasons.push(series.reason||'Capturar consumo diario');
-    if(!manual && linkId && !o.confirmed)shortageReasons.push('Confirmar artículo del Motor 02');
-    if(!manual && series.valid && series.daysObserved<3)shortageReasons.push('Historial insuficiente: requiere validación');
-    const min=daily==null?null:round(daily*(num(cfg.leadDays)+num(cfg.safetyDays)),item.unit);
-    const max=daily==null?null:round(daily*(num(cfg.leadDays)+num(cfg.cycleDays)+num(cfg.safetyDays)),item.unit);
+    const daily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
+    const reasons=[];
+    if(stock===null)reasons.push('Conciliar piezas y kg/L del inventario');
+    if(['L','KG'].includes(item.unit)&&!o.stockVerified)reasons.push('Validar stock convertido a '+item.unit);
+    if(daily===null)reasons.push(series.reason||'Capturar consumo diario');
+    if(!manual && linkId && !o.confirmed)reasons.push('Confirmar artículo del Motor 02');
+    if(!manual && series.valid && series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
+    const receipt=cleanDate(cfg.receiptDate),snapshot=cleanDate(state.data.inventoryDate);
+    const next=receipt?nextDelivery(receipt,cfg.deliveryWeekdays):'';
+    const elapsed=snapshot&&receipt?daysBetween(snapshot,receipt):NaN;
+    const coverageDays=receipt&&next?daysBetween(receipt,next):NaN;
+    if(!receipt || !next)reasons.push('Seleccionar días y fecha de recepción');
+    if(!snapshot)reasons.push('Indicar fecha del conteo inicial');
+    else if(Number.isFinite(elapsed)&&elapsed<0)reasons.push('La recepción debe ser posterior al conteo inicial');
+    const safety=Math.max(0,num(cfg.safetyDays,0));
+    const min=daily==null||!Number.isFinite(elapsed)||elapsed<0?null:round(daily*(elapsed+safety),item.unit);
+    const max=daily==null||!Number.isFinite(elapsed)||elapsed<0||!Number.isFinite(coverageDays)?null:round(daily*(elapsed+coverageDays+safety),item.unit);
     const coverage=stock!==null&&daily>0?stock/daily:(daily===0?Infinity:null);
-    const defaultMultiple=['PZA','UND','ST'].includes(item.unit)?1:.001;
-    const multiple=(num(o.multiple,defaultMultiple)>0)?num(o.multiple,defaultMultiple):defaultMultiple;
-    const position=stock===null?null:stock+inbound;
-    if(['L','KG'].includes(item.unit)&&daily>0&&position!==null&&position<=min&&max>position&&!(num(o.multiple,null)>0))shortageReasons.push('Definir múltiplo de compra en '+item.unit);
-    const ready=shortageReasons.length===0;
+    const multiple=(num(o.multiple,['PZA','UND','ST'].includes(item.unit)?1:.001)>0)?num(o.multiple,['PZA','UND','ST'].includes(item.unit)?1:.001):1;
+    const position=stock===null||!Number.isFinite(elapsed)||elapsed<0||daily===null?null:stock - daily*elapsed + inbound;
+    const required=daily==null||!Number.isFinite(coverageDays)?null:daily*(coverageDays+safety);
+    if(['L','KG'].includes(item.unit)&&daily>0&&position!==null&&required>position&&!(num(o.multiple,null)>0))reasons.push('Definir múltiplo de compra en '+item.unit);
+    const ready=reasons.length===0;
     let order=ready?0:null;
-    if(ready && position<=min && daily>0){
-      order=Math.max(0,Math.ceil((max-position-1e-9)/multiple)*multiple);
+    if(ready&&required>position&&daily>0){
+      order=Math.max(0,Math.ceil((required-position-1e-9)/multiple)*multiple);
       order=Math.round(order*1e6)/1e6;
     }
     const status=!ready?'pendiente':order>0?'pedido':'listo';
     const source=manual?'manual':(linkId&&series.valid?'motor':'sin-historial');
-    return {item,override:o,linkId,daily,stock,inbound,position,min,max,coverage,order,status,source,ready,reasons:shortageReasons,series,multiple,manual};
+    return {item,override:o,linkId,daily,stock,inbound,position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,coverageDays,required,risk:position!==null&&position<0};
   }
-  root.WOECore={DEFAULTS,n,num,norm,dayFromExcel,addDays,format,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round};
+
+  root.WOECore={DEFAULTS,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round};
   if(typeof module==='object'&&module.exports)module.exports=root.WOECore;
 })(typeof window!=='undefined'?window:globalThis);
