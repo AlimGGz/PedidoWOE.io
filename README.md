@@ -1,40 +1,67 @@
-# Pedidos WOE · Versión 4.0.0
+# Pedidos WOE · versión 5.0.0
 
-Aplicación web estática y local para GitHub Pages, enfocada en **Pedido WOE**, **Máximos/Mínimos** y **Tendencia de Uso**, conservando el flujo de carga de los tres motores Excel y después el inventario inicial PDF o Excel.
+Aplicación estática para **GitHub Pages**, enfocada exclusivamente en **Pedido WOE, máximos y mínimos, tendencia de uso y conciliación de artículos**. Toda la lectura de Excel y PDF se realiza en el navegador del usuario. No envía pedidos al sistema oficial WOE.
 
-## Instalación / actualización
+## Publicación
 
-1. Extrae el ZIP y copia `index.html` a la raíz del repositorio de GitHub Pages, reemplazando la versión anterior.
-2. El sitio no necesita archivos `vendor/`, servidor, cuentas ni conexiones externas para procesar los Excel. `JSZip` está incluido dentro del HTML (ver licencia adjunta).
-3. Si la versión anterior sigue visible, espera a que GitHub Pages publique la actualización y recarga con **Ctrl+F5**.
-4. Los archivos XLSM/XLSX, PDF y respaldos son **privados**: no los subas al repositorio si es público. Solo se seleccionan desde la aplicación en tu navegador.
-5. Los datos guardados por la versión anterior se conservan en el almacenamiento local del mismo navegador y origen cuando sea posible. **Borrar todo** elimina motores, inventario, configuraciones, capturas, revisiones y tránsito.
+1. Descomprime el ZIP y reemplaza el `index.html` del repositorio de GitHub Pages por este.
+2. Mantén `JSZip-LICENSE.md` y este README junto al sitio. El lector Excel se incorpora al `index.html`; no hay carpeta `vendor` obligatoria ni dependencias de red.
+3. Espera la publicación de GitHub Pages y recarga con **Ctrl+F5**.
+4. No subas al repositorio público motores, inventarios, PDFs de proveedores ni archivos de respaldo: solo son datos privados para cargar en el navegador.
+5. Los datos previos guardados por v4 normalmente persisten en el mismo dominio y navegador. La opción **Borrar todo** reinicia la aplicación.
 
-## Cambios incluidos
+## Orden recomendado
 
-- Se retiró la demostración de pastel de chocolate del panel principal.
-- `v4.0.0` aparece discretamente en el pie de página.
-- La unidad de trabajo predeterminada es **PZA** para cada artículo. En **Editar** se puede elegir PZA, UND, KG o L. Al cambiar de unidad se limpia el campo de stock en el editor para no reinterpretar una cifra en otra unidad; confirma stock, equivalencia con consumo y múltiplo de compra.
-- Se agregó **3. Artículos en tránsito (opcional)**, inicialmente cerrado, con carga de PDF de proveedor y captura manual de artículo/SAP, fecha y piezas.
-- El lector de PDF de tránsito admite el formato textual enviado (con `NºMaterial Cliente`, `Cantidad`, `Unidad` y `Fecha de entrega`). Busca por **SAP cliente**, no por el número de material del proveedor. Calcula `CAJ` mediante la presentación explícita `CJ12...`, `CJ24...`, etc. Una botella `BTE` cuenta como una pieza. Si falta una equivalencia, se deja pendiente.
-- Se consideran exclusivamente tránsitos con **fecha posterior a la del inventario contado y hasta la fecha de recepción seleccionada, inclusive**. Si el producto ya estaba contabilizado en el inventario, elimina el tránsito para evitar duplicación. Documentos repetidos con el mismo número de pedido sustituyen al anterior.
-- La tabla de Pedido WOE tiene encabezado fijo durante el desplazamiento **dentro de la tabla**, ordenamiento haciendo clic en sus encabezados y una nueva columna **En tránsito**.
-- Cuando el consumo y el stock permiten calcular una necesidad, **Pedir** se actualiza tras guardar los cambios, incluso si la asociación al Motor 02 todavía es provisional. En esos casos se indica **Por validar** y no se exporta al listado definitivo de pedidos.
-- Para pedidos con propuesta cero se habilita **○ Revisar**, que pasa a **✓ Revisado** en verde. Esto confirma la revisión visual, **no sustituye la validación de consumo, SAP o conversión de unidades**. Si cambian stock, consumo, fecha o tránsito, la revisión caduca y debe repetirse.
-- La exportación Excel incluye una quinta hoja **En Transito** con detalle de documentos y conversiones, además de las cuatro hojas anteriores.
+1. Cargar `Motor_01_Auditoria_Transacciones.xlsm`, `Motor_02_Uso_Stock.xlsm` y `Motor_03_Detalle_Productos.xlsm`, en cualquier orden compatible (el Motor 01 debe cargarse antes del 03 para identificar tienda).
+2. Cargar **inventario inicial** en PDF de la aplicación de conteo o Excel.
+3. Confirmar **fecha del conteo**, **días de recepción** y **fecha de pedido a recibir**. La fecha actual se toma del dispositivo; el cálculo es por días calendario.
+4. Ajustar **un día de seguridad como mínimo** y, si procede, **variación global de demanda** (−100% a +300%; 0% por defecto).
+5. Cargar opcionalmente órdenes en tránsito en PDF o capturar entregas previstas por artículo en piezas.
+6. Elegir el **proveedor**, revisar stock, enlaces al motor y presentación, marcar **Revisado** en cada artículo y exportar el pedido del proveedor elegido.
 
-## Validaciones
+**Importante:** el calendario de entregas es un ajuste **compartido** entre proveedores, no se infiere automáticamente del proveedor. Ajusta los días y la fecha de recepción cuando cambies de empresa.
 
-- Los archivos `.xlsm` se procesan como libro de datos; no se ejecutan macros.
-- PDFs escaneados o con un diseño de proveedor diferente pueden requerir captura manual de tránsito.
-- Si un SAP en tránsito no existe en el inventario cargado, se indica en la tabla de tránsito y no se incluye en la propuesta de pedido hasta disponer de un artículo conciliado.
-- Para productos cuyo inventario se expresa en kg/L o mezcla piezas con kg/L, no se inventan conversiones a piezas. Es necesario validar cantidades y equivalencias en **Editar** antes del pedido definitivo.
-- Si un producto tiene consumo desconocido, no se genera una cantidad de pedido numérica hasta capturar/conciliar su uso diario.
+## Reglas de proveedor (asignación exclusiva por SAP)
 
-## Interpretación del cálculo
+- **Comercializadora de Lacteos y Derivados SA de CV:** `152630`, `150178`, `150180`, `150181`, `150186`, `150187`.
+- **Cafe Sirena SA de CV:** `149299`, `149300`, `149303`, `149305`, `149398`, `149410`, `149416`, `149881`.
+- **Distribuidora e Importadora Alsea SA de CV:** todos los códigos SAP restantes.
 
-Stock proyectado al recibir = stock inicial − (consumo diario × días desde conteo) + tránsito aplicable + tránsito manual.
+La lista de la **Propuesta de pedido**, máximos y mínimos, tendencia, conciliación y la **exportación** se limitan al proveedor seleccionado. El modo «Todos los proveedores» sirve para consultar el conjunto.
 
-Pedido sugerido = máximo entre cero y (consumo diario × días hasta la siguiente recepción + días de seguridad − stock proyectado), redondeado al múltiplo de compra.
+## Cómo calcula el pedido
 
-Las propuestas con validaciones pendientes son **indicativas** y solo pasan a `Pedido WOE` exportado como pedido definitivo cuando la validación está completa. La herramienta no envía pedidos al sistema oficial.
+La unidad inicial es **PZA**. Si el usuario cambia un artículo a KG/L/UND, debe confirmar stock, conversión y múltiplo de compra.
+
+- Consumo diario base: ponderación configurable entre promedio del Motor 02 de los últimos siete días y promedio de 28 días, o captura manual si no hay dato fiable.
+- Consumo ajustado = consumo diario base × (1 + variación global de demanda / 100).
+- Stock previsto a recepción = stock del conteo − consumo ajustado × días entre conteo y recepción + tránsito con entrega posterior al conteo y hasta recepción + tránsito manual en el editor.
+- Objetivo final = consumo ajustado × (días entre recepción seleccionada y siguiente recepción + **1 o más días de seguridad**).
+- Los artículos en tránsito que llegarán **después de la recepción seleccionada y antes de la siguiente** disminuyen la necesidad total **solo a partir de su fecha de llegada**. La app comprueba que no se agote stock antes de cada entrega posterior.
+- Pedido sugerido = cantidad mínima que satisface el objetivo y las restricciones de fechas, redondeada **hacia arriba** al múltiplo de compra.
+- Mínimo = consumo ajustado × días de seguridad. Máximo = consumo ajustado × (días hasta siguiente recepción + seguridad). Están expresados como niveles a la recepción, **no** al día del conteo.
+
+**Suposiciones:** consumo uniformemente distribuido por día, entregas al principio del día, movimientos de inventario conocidos solo a través del motor de consumo y del tránsito registrado. La app no conoce horas exactas de recepción, ventas reales futuras, transferencias o mermas extraordinarias que no estén en las fuentes. Si una fecha de entrega coincide con el día del inventario contado, se excluye para evitar doble conteo; verifica que ya estuviera incluido o actualiza el registro.
+
+## PDF de tránsito
+
+Se reconoce el PDF estructurado aportado, con `NºMaterial`, `Denominación`, `Cantidad`, `Unidad`, `NºMaterial Cliente` (SAP), `Fecha de entrega`. **El SAP para el inventario se obtiene de NºMaterial Cliente**. Para cajas, `CJ12PZAS` se transforma en 12 PZA por caja; `BTE`/`BOT` equivale a 1 pieza. Cuando no hay presentación identificable, se solicita validación. Un mismo número de pedido reemplaza una carga anterior para evitar duplicados. Los archivos PDF escaneados o de estructura distinta pueden no ser compatibles; usa captura manual en ese caso.
+
+Si el `NºMaterial` del proveedor aparece también de forma única en el catálogo de consumo del Motor 02, se propone una asociación documentada con el SAP; sigue requiriendo validación del vínculo antes de considerarse listo para un pedido definitivo.
+
+## Revisión y exportación
+
+- El botón `○ Revisar` está **siempre visible** en la columna `Revisión`, tanto si la propuesta es cero como si es positiva. Cambia a `✓ Revisado` en verde.
+- La revisión es visual y **no** suple las validaciones técnicas ni implica que el pedido haya sido enviado.
+- Si cambian fecha, stock, tránsito, demanda, consumo, múltiplo o unidad, la revisión de ese artículo caduca automáticamente.
+- Se muestra propuesta de pedido **provisional** cuando hay datos calculables pero quedan validaciones técnicas. Solo los artículos `Listos` con pedido mayor a cero se incluyen en la hoja **Pedido WOE** del Excel. Los demás aparecen en **Pendientes** y en **Máximos y mínimos**.
+- El Excel contiene 5 hojas: `Pedido WOE`, `Maximos y Minimos`, `Tendencia de Uso`, `Pendientes`, `En Transito`.
+
+## Pruebas de verificación realizadas
+
+- Carga real de los tres motores XLSM y del PDF de inventario con **253 artículos** de la tienda de prueba.
+- Lectura del PDF de tránsito **4506782833.pdf**, con cinco renglones y entrega del 09/11/2026.
+- Filtrado de 6 códigos SAP de Lácteos, 8 de Cafe Sirena y 239 del resto en la lista de prueba.
+- Conteo de 12 piezas y uso de 4.8 PZA/día, entrega martes 10/11/2026 y sábado 14/11/2026: pedido **17 piezas** con un día de seguridad. Con +25% global, pedido de **24 piezas**.
+- Tránsito posterior de 100 piezas el viernes 13/11/2026: el cálculo mantiene **8 piezas de pedido** para impedir faltantes antes de esa entrega, en el caso base.
+- Encabezados ordenables, SAP/artículo fijos horizontalmente, revisión disponible con cantidades positivas, actualización tras editar y reinicio de revisión tras cambios.

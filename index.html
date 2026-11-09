@@ -97,6 +97,31 @@
 @media(max-width:900px){.transit-manual{grid-template-columns:1fr 1fr}.transit-manual button{align-self:end}.transit-upload-row{grid-template-columns:1fr}}
 @media(max-width:580px){.transit-manual{grid-template-columns:1fr 1fr}.transit-manual label:first-child{grid-column:1/-1}.order-scroll{max-height:62vh}}
 @media print{.order-scroll{max-height:none;overflow:visible}.data-table thead th{position:static!important}.transit-content,.optional-label,#transitSection,.review-btn{display:none!important}#mainTable{min-width:0}}
+
+/* v5: proveedores, lectura de tránsito e incrementos globales */
+.supplier-selector{display:flex;align-items:center;gap:15px;flex-wrap:wrap;background:#eff5ee;border:1px solid #dce9dc;border-radius:11px;padding:13px 15px;margin:12px 0 15px}
+.supplier-selector label{display:flex;flex-direction:column;gap:3px;min-width:200px;max-width:350px;color:#285d41;font-size:12px}
+.supplier-selector label small{color:#718b7a;font-size:10px;line-height:1.35;font-weight:400}
+.supplier-selector select{flex:1;min-width:min(275px,100%);min-height:39px;max-width:580px;border:1px solid #cbddca;background:white;border-radius:8px;padding:0 11px;color:#1e553b;font-size:12px}
+.supplier-counter{font-size:11px;color:#49735b;white-space:nowrap}
+.secondary-grid{grid-template-columns:repeat(3,minmax(155px,1fr))!important}
+.secondary-grid .calendar-summary{grid-column:1/-1}
+#mainTable{min-width:1300px}
+.sap-code{display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;font-weight:800;color:#176447;background:#eaf3eb;border:1px solid #d7e7d9;border-radius:6px;padding:5px 7px;white-space:nowrap}
+.inbound-detail{display:block;color:#71907c;font-size:9px;font-weight:400;margin-top:3px}
+.inbound-warn{color:#a77d47;font-size:10px}
+.review-btn{min-width:86px}
+@media(max-width:1050px){.secondary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:590px){.secondary-grid{grid-template-columns:1fr 1fr!important}.supplier-selector{gap:10px}.supplier-selector select{min-width:100%}}
+@media print{.supplier-selector{border:0;padding:0;margin:0 0 12px;background:none}.supplier-selector select{border:0}.supplier-counter{display:none}}
+
+/* El SAP y el artículo permanecen visibles también al desplazar horizontalmente. */
+#mainTable{min-width:1580px;border-collapse:separate;border-spacing:0}
+#mainTable th:first-child,#mainTable td:first-child{position:sticky;left:0;min-width:103px;width:103px;max-width:103px;z-index:4;background:#fff}
+#mainTable th:nth-child(2),#mainTable td:nth-child(2){position:sticky;left:103px;min-width:245px;width:245px;max-width:245px;z-index:4;background:#fff;box-shadow:inset -1px 0 #e7eee5}
+#mainTable thead th:first-child,#mainTable thead th:nth-child(2){z-index:8;background:#f4f8f3}
+#mainTable tbody tr:hover td:first-child,#mainTable tbody tr:hover td:nth-child(2){background:#f5fbf5}
+@media print{#mainTable th:first-child,#mainTable td:first-child,#mainTable th:nth-child(2),#mainTable td:nth-child(2){position:static;min-width:0;max-width:none;width:auto;box-shadow:none}}
 </style>
 </head>
 <body>
@@ -132,12 +157,12 @@
 <label>Fecha del stock inicial <small>Fecha en que se realizó el conteo</small><input id="inventoryDate" type="date"/></label>
 <label>Pedido que deseas calcular <small>Elige una fecha de entrega</small><select aria-label="Fecha de recepción a calcular" id="receiptDate"></select></label>
 </div>
-<div class="calendar-grid secondary-grid"><label>Días de seguridad <small>Stock extra después de la siguiente entrega</small><input id="safetyDays" max="30" min="0" step="1" type="number" value="0"/></label><label>Importancia del consumo reciente <small>Últimos 7 días (%) · Por defecto 70%</small><input id="recentWeight" max="100" min="0" step="5" type="number" value="70"/></label><div class="calendar-summary" id="calendarSummary">Selecciona al menos un día de recepción.</div></div>
+<div class="calendar-grid secondary-grid"><label>Días de seguridad <small>Stock extra después de la siguiente entrega</small><input id="safetyDays" max="30" min="1" step="1" type="number" value="1"/></label><label>Importancia del consumo reciente <small>Últimos 7 días (%) · Por defecto 70%</small><input id="recentWeight" max="100" min="0" step="5" type="number" value="70"/></label><label>Variación global de demanda (%) <small>Para todos los SAP · Admite incrementos (+) o reducciones (−)</small><input id="demandAdjustment" max="300" min="-100" step="1" type="number" value="0"/></label><div class="calendar-summary" id="calendarSummary">Selecciona al menos un día de recepción.</div></div>
 <p class="weight-explanation" id="weightExplanation" aria-live="polite">El pronóstico combina 70% del promedio de los últimos 7 días y 30% del de los últimos 28 días. No modifica los consumos manuales.</p>
-<p class="formula-note"><strong>Modelo:</strong> stock estimado a la recepción = stock del conteo − consumo diario × días transcurridos + recepciones en tránsito. Pedido = consumo diario × días hasta la siguiente recepción (+ seguridad) − stock estimado, redondeado al múltiplo de compra. No presume entregas anteriores que no se hayan registrado.</p>
+<p class="formula-note"><strong>Metodología:</strong> Consumo ajustado = consumo base × (1 + variación global / 100). Se proyecta el stock desde la fecha del conteo hasta la recepción elegida, descontando consumo y sumando solo tránsitos con fecha válida. Se cubre la demanda hasta la siguiente entrega, <b>más 1 día mínimo de seguridad</b>. Los pedidos en tránsito que llegarán durante ese intervalo se descuentan únicamente desde su fecha prevista; el modelo comprueba que no falten piezas antes de su llegada. Se redondea al múltiplo de compra. Asume consumo diario uniforme y entregas al inicio del día, sin conocer la hora exacta de conteo o recepción.</p>
 </section>
 <section class="data-section" id="transitSection">
-<div class="section-bar"><div><h2>3. Artículos en tránsito <span class="optional-label">Opcional</span></h2><p>Sube órdenes de proveedor en PDF o registra artículos pendientes de recibir. Se descuentan únicamente si su fecha de entrega es posterior al conteo y no posterior a la recepción seleccionada.</p></div><button class="text-btn" id="toggleTransit" type="button">Mostrar tránsito ⌄</button></div>
+<div class="section-bar"><div><h2>3. Artículos en tránsito <span class="optional-label">Opcional</span></h2><p>Sube órdenes de proveedor en PDF o registra artículos pendientes de recibir. Se incorpora su fecha prevista: antes o el día de recepción, y también durante la cobertura hasta la siguiente entrega; el stock previo al conteo nunca se duplica.</p></div><button class="text-btn" id="toggleTransit" type="button">Mostrar tránsito ⌄</button></div>
 <div class="transit-content hidden" id="transitContent">
 <div class="transit-upload-row"><label class="transit-upload"><strong>↥ Cargar PDF de pedido del proveedor</strong><small>Lee NºMaterial Cliente (SAP), cantidad, CAJ/BTE y fecha de entrega. No publica el documento.</small><input id="transitInput" type="file" accept=".pdf" multiple hidden /></label><div class="transit-help">Las cajas se convierten a piezas a partir de la presentación escrita en el PDF (p. ej. CJ12 = 12 piezas). Si falta esa información, el artículo queda por validar.</div></div>
 <div class="transit-manual"><label>Artículo del inventario <select id="transitManualSap"><option value="">Selecciona SAP...</option></select></label><label>Entrega prevista <input id="transitManualDate" type="date" /></label><label>Cantidad (PZA) <input id="transitManualQty" type="number" min="0.001" step="any" placeholder="0" /></label><button class="btn ghost" id="addTransitManual" type="button">+ Agregar tránsito</button></div>
@@ -146,13 +171,13 @@
 </div></section>
 <section class="view" id="view-pedido">
 <div class="section-bar"><div><h2>Propuesta de pedido</h2><p>Pedido para la fecha seleccionada. *Revisado indica revisión visual, no necesariamente conciliación validada.</p></div><div class="small-caption" id="tableCount"></div></div>
-<div class="filters"><div class="search-wrap"><span>⌕</span><input autocomplete="off" id="searchInput" placeholder="Buscar por SAP, artículo o ID de uso…" type="search"/></div><select aria-label="Familia de producto" id="familyFilter"><option value="">Todas las familias</option></select><select aria-label="Filtrar estado" id="statusFilter"><option value="">Todos los estados</option><option value="pedido">Con pedido sugerido</option><option value="listo">Listos</option><option value="pendiente">Requieren revisión</option><option value="revisado">Revisión terminada</option><option value="manual">Sin consumo de motor</option></select></div>
-<div class="table-scroll order-scroll" id="orderScroll"><table class="data-table" id="mainTable"><thead><tr><th data-sort="name">ARTÍCULO · SAP</th><th data-sort="source">TIPO DE USO</th><th data-sort="stock" class="num">STOCK INICIAL</th><th data-sort="inbound" class="num">EN TRÁNSITO</th><th data-sort="position" class="num">AL RECIBIR</th><th data-sort="daily" class="num">USO/DÍA</th><th data-sort="coverage" class="num">COBERTURA</th><th data-sort="order" class="num">PEDIR</th><th data-sort="status">ESTADO</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="mainBody"></tbody></table></div>
+<div class="supplier-selector"><label for="supplierFilter"><strong>Proveedor del pedido</strong><small>La propuesta y el Excel mostrarán solo los SAP de este proveedor. Verifica los días de entrega al cambiar de empresa.</small></label><select id="supplierFilter" aria-label="Proveedor del pedido"><option value="all">Todos los proveedores · consulta general</option><option value="lacteos">Comercializadora de Lacteos y Derivados SA de CV</option><option value="alsea">Distribuidora e Importadora Alsea SA de CV</option><option value="sirena">Cafe Sirena SA de CV</option></select><span class="supplier-counter" id="supplierCounter"></span></div><div class="filters"><div class="search-wrap"><span>⌕</span><input autocomplete="off" id="searchInput" placeholder="Buscar por SAP, artículo o ID de uso…" type="search"/></div><select aria-label="Familia de producto" id="familyFilter"><option value="">Todas las familias</option></select><select aria-label="Filtrar estado" id="statusFilter"><option value="">Todos los estados</option><option value="pedido">Con pedido sugerido</option><option value="listo">Listos</option><option value="pendiente">Requieren revisión</option><option value="revisado">Revisión terminada</option><option value="manual">Sin consumo de motor</option></select></div>
+<div class="table-scroll order-scroll" id="orderScroll"><table class="data-table" id="mainTable"><thead><tr><th data-sort="sap">CÓDIGO SAP</th><th data-sort="name">ARTÍCULO</th><th data-sort="source">TIPO DE USO</th><th data-sort="stock" class="num">STOCK INICIAL</th><th data-sort="inbound" class="num">EN TRÁNSITO</th><th data-sort="position" class="num">AL RECIBIR</th><th data-sort="daily" class="num">USO/DÍA AJUSTADO</th><th data-sort="coverage" class="num">COBERTURA</th><th data-sort="order" class="num">PEDIR</th><th data-sort="status">ESTADO</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="mainBody"></tbody></table></div>
 </section>
-<section class="view hidden" id="view-niveles"><div class="section-bar"><div><h2>Máximos y mínimos</h2><p>Máximos y mínimos ajustados a tu calendario de recepción.</p></div></div><div class="filters"><div class="search-wrap"><span>⌕</span><input id="levelSearch" placeholder="Buscar artículo o SAP…" type="search"/></div><select id="levelFilter"><option value="">Todas las familias</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>ARTÍCULO · SAP</th><th class="num">USO/DÍA</th><th class="num">MÍNIMO</th><th class="num">MÁXIMO</th><th class="num">STOCK</th><th class="num">DÍAS</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="levelsBody"></tbody></table></div></section>
+<section class="view hidden" id="view-niveles"><div class="section-bar"><div><h2>Máximos y mínimos</h2><p>Mínimo = un día de seguridad; máximo = cobertura hasta la siguiente entrega + seguridad. Ambos calculados para la fecha de recepción.</p></div></div><div class="filters"><div class="search-wrap"><span>⌕</span><input id="levelSearch" placeholder="Buscar artículo o SAP…" type="search"/></div><select id="levelFilter"><option value="">Todas las familias</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>ARTÍCULO · SAP</th><th class="num">USO/DÍA</th><th class="num">MÍNIMO</th><th class="num">MÁXIMO</th><th class="num">STOCK</th><th class="num">DÍAS</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="levelsBody"></tbody></table></div></section>
 <section class="view hidden" id="view-tendencia"><div class="section-bar"><div><h2>Evolución del consumo</h2><p>Uso ideal diario del Motor 02. La tendencia de ventas aparece como contexto, no como consumo de inventario.</p></div></div><div class="trend-panel"><div class="trend-select"><label>Artículo a analizar</label><select id="trendItemSelect"></select></div><div class="trend-metrics"><div><span>Promedio 7 días</span><strong id="trendRecent">—</strong></div><div><span>Promedio anterior</span><strong id="trendPrevious">—</strong></div><div><span>Variación</span><strong id="trendChange">—</strong></div><div><span>Días con registros</span><strong id="trendDays">—</strong></div></div><div class="chart-area" id="chartArea"><div class="empty-chart">Selecciona un artículo con historial de uso.</div></div><div class="trend-notes" id="trendNotes"></div></div><div class="section-bar chart-section"><div><h2>Contexto de operación</h2><p>Transacciones y actividad del Motor 01, más referencias de venta del Motor 03.</p></div></div><div class="context-grid"><div class="context-box"><span>Transacciones · último día disponible</span><strong id="lastTransactions">—</strong><small id="lastTransactionsDay"></small></div><div class="context-box"><span>Venta neta · último día disponible</span><strong id="lastSales">—</strong><small>Motor 01 · fuente de contexto</small></div><div class="context-box"><span>Renglones de productos · Motor 03</span><strong id="posLines">—</strong><small>Registros consolidados por producto y día</small></div></div></section>
 <section class="view hidden" id="view-conciliacion"><div class="section-bar"><div><h2>Conciliación de catálogos</h2><p>SAP del inventario ≠ IDArticulo del Motor 02. Confirma enlaces antes de hacer un pedido definitivo.</p></div><button class="btn ghost" id="bulkConfirm">✓ Confirmar coincidencias seguras</button></div><div class="notice">Se pueden consultar sugerencias por similitud de nombre, pero **no se equiparan códigos diferentes**. Las unidades de uso que no se puedan convertir requieren captura manual.</div><div class="table-scroll"><table class="data-table"><thead><tr><th>INVENTARIO SAP</th><th>SUGERENCIA DE USO</th><th class="num">CONFIANZA</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead><tbody id="reconcileBody"></tbody></table></div></section>
-<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial. <span class="version-mark">v4.0.0</span></footer>
+<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial. <span class="version-mark">v5.0.0</span></footer>
 </div>
 </main>
 </div>
@@ -178,7 +203,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 (function(root){
   'use strict';
   const DAY=86400000;
-  const DEFAULTS={deliveryWeekdays:[2,6],receiptDate:"",safetyDays:0,recentWeight:70};
+  const DEFAULTS={deliveryWeekdays:[2,6],receiptDate:"",safetyDays:1,recentWeight:70,demandAdjustment:0,supplierFilter:'all'};
+  const SUPPLIERS={
+    lacteos:'Comercializadora de Lacteos y Derivados SA de CV',
+    alsea:'Distribuidora e Importadora Alsea SA de CV',
+    sirena:'Cafe Sirena SA de CV'
+  };
+  const LACTEOS=new Set(['152630','150178','150180','150181','150186','150187']);
+  const SIRENA=new Set(['149299','149300','149303','149305','149398','149410','149416','149881']);
+  const supplierForSap=sap=>LACTEOS.has(String(sap))?'lacteos':SIRENA.has(String(sap))?'sirena':'alsea';
   const n=(v,fallback=null)=>v===''||v===null||v===undefined?fallback:(Number.isFinite(Number(v))?Number(v):fallback);
   const num=(v,d=0)=>n(v,d);
   const cleanDate=day=>/^\d{4}-\d\d-\d\d$/.test(String(day||''))?String(day):'';
@@ -219,18 +252,47 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     // Un conteo en kg/L no se transforma silenciosamente en piezas, sobre todo
     // si contiene parte de un envase o su columna "PIEZAS" es fraccionaria.
     if(['PZA','UND'].includes(target)&&['KG','L'].includes(source)){
-      if(bulk>0||Math.abs(pieces-Math.round(pieces))>1e-7)return null;
+      if(bulk>0)return null;
+      // El PDF llama PIEZAS a esta columna, aunque la unidad base sea L/KG.
+      // Conservarla como equivalente provisional y pedir confirmación expresa; no inventar tamaños.
       return Math.max(0,pieces);
     }
     return null;
   }
-  function unitFactor(stockUnit, motorUnit){
-    const u=String(motorUnit||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase(); const prefix=String(motorUnit||'').split(':')[0].toUpperCase();
+  function unitFactor(stockUnit, motorUnit, productName=''){
+    const u=String(motorUnit||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    const prefix=String(motorUnit||'').split(':')[0].trim().toUpperCase();
     const stock=String(stockUnit||'').toUpperCase();
     if(['PZA','UND','ST'].includes(stock)){
-      if(['PZA','UND','ST','REB'].includes(prefix))return 1;
+      if(['PZA','UND','ST','REB','BOT','BTL','BTE','BOL'].includes(prefix))return 1;
       if(prefix==='BLI'){
         const m=u.match(/(\d+(?:\.\d+)?)\s*PZ/);return m?Number(m[1]):null;
+      }
+      // Convertir consumos en litros/kg a envases cuando la descripción
+      // especifica inequívocamente el contenido individual (no tamaño de caja).
+      const title=String(productName||'').toUpperCase();
+      const sizes=[...title.matchAll(/(\d+(?:[.,]\d+)?)\s*(ML|LTS?|LT|L|KG|GRS?|GR|G|LBS?|LB|OZ)\b/g)];
+      if(sizes.length){
+        const m=sizes[sizes.length-1],size=Number(m[1].replace(',','.')),key=m[2];
+        let volumeL=null,massKG=null;
+        if(['ML'].includes(key))volumeL=size/1000;
+        if(['LT','LTS','L'].includes(key))volumeL=size;
+        if(['KG'].includes(key))massKG=size;
+        if(['GR','GRS','G'].includes(key))massKG=size/1000;
+        if(['LB','LBS'].includes(key))massKG=size*0.45359237;
+        if(key==='OZ')massKG=size*0.028349523125;
+        if(size>0){
+          if(['LT','L','LITRO','LITROS'].includes(prefix)&&volumeL>0){
+            // Ej. Motor «LT: 2 Litros» con envase 2LT: cada unidad del motor
+            // representa un envase; «LT: Litro» representa 1 L.
+            const sizeMotor=u.match(/:\s*(\d+(?:[.,]\d+)?)\s*(?:LITROS?|LTS?|LT|L)\b/);
+            const factorMotor=sizeMotor?Number(sizeMotor[1].replace(',','.')):1;
+            return factorMotor/volumeL;
+          }
+          if(['ML','MILILITRO','MILILITROS'].includes(prefix)&&volumeL>0)return 1/(volumeL*1000);
+          if(['KG','KILO','KILOS'].includes(prefix)&&massKG>0)return 1/massKG;
+          if(['GR','GRS','G','GRAMO','GRAMOS'].includes(prefix)&&massKG>0)return 1/(massKG*1000);
+        }
       }
       return null;
     }
@@ -273,7 +335,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for(const entry of records){
       const date=cleanDate(entry.day);if(!date||date<first||date>last)continue;
       const unit=String(entry.unit||'');unitSet.add(unit);
-      const factor=override?.factor!==undefined&&override?.factor!==null&&override.factor!==''?num(override.factor,null):unitFactor(item.unit,unit);
+      const factor=override?.factor!==undefined&&override?.factor!==null&&override.factor!==''?num(override.factor,null):unitFactor(item.unit,unit,item.name);
       if(!(factor>0)){unsupported.add(unit);continue;}
       const qty=Math.max(0,num(entry.qty,0))*factor;
       dayTotals.set(date,(dayTotals.get(date)||0)+qty);
@@ -287,69 +349,112 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const w=Math.max(0,Math.min(1,num(data?._recentWeight,70)/100));
     return {valid:true,series,recent,previous,historical,forecast:w*recent+(1-w)*historical,daysObserved:obs.size,units:[...unitSet],first,last};
   }
-  function transitFor(item,state,override,unit,receipt,snapshot){
-    let pieces=0;const pending=[];let applicable=0;
+  function transitFor(item,state,override,unit,receipt,next,snapshot){
+    // Conserva todos los documentos para visualización, pero solo toma en cuenta
+    // cantidades con fecha válida, posteriores al conteo y anteriores a la reposición siguiente.
+    let totalPieces=0,activePieces=0,beforePieces=0,laterPieces=0;
+    let qtyBefore=0,qtyLater=0,applicable=0;
+    const pending=[],eventsBefore=[],eventsLater=[],docDates=[];
+    const pieceFactor=['PZA','UND'].includes(unit)?1:n(override.pieceFactor,null);
     for(const doc of state.data.transitDocs||[]){
-      if(!doc.deliveryDate||!receipt||!snapshot)continue;
-      if(doc.deliveryDate<=snapshot||doc.deliveryDate>receipt)continue;
       for(const line of doc.rows||[]){
         if(String(line.sap)!==String(item.sap))continue;
-        if(line.pieces===null||!Number.isFinite(Number(line.pieces))){pending.push(doc.orderNumber+' · conversión de '+line.supplierUnit+' pendiente');continue;}
-        pieces+=Math.max(0,Number(line.pieces));applicable++;
+        const pieces=n(line.pieces,null);
+        if(pieces!==null&&pieces>=0)totalPieces+=pieces;
+        docDates.push({date:doc.deliveryDate,pieces,orderNumber:doc.orderNumber});
+        if(!doc.deliveryDate||!snapshot||!receipt||!next)continue;
+        if(doc.deliveryDate<=snapshot||doc.deliveryDate>=next)continue;
+        if(pieces===null||pieces<0){pending.push('Tránsito '+doc.orderNumber+': presentación '+line.supplierUnit+' sin equivalencia');continue;}
+        activePieces+=pieces;applicable++;
+        const before=doc.deliveryDate<=receipt;
+        if(before)beforePieces+=pieces;else laterPieces+=pieces;
+        if(!(pieceFactor>0)){pending.push('Definir piezas a '+unit+' para el tránsito '+doc.orderNumber);continue;}
+        const qty=pieces*pieceFactor;
+        if(before){qtyBefore+=qty;eventsBefore.push({date:doc.deliveryDate,qty,pieces,orderNumber:doc.orderNumber});}
+        else{qtyLater+=qty;eventsLater.push({date:doc.deliveryDate,qty,pieces,orderNumber:doc.orderNumber});}
       }
     }
-    if(!pieces)return {qty:0,pieces,applicable,pending};
-    if(['PZA','UND'].includes(unit))return {qty:pieces,pieces,applicable,pending};
-    const pFactor=n(override.pieceFactor,null);
-    if(!(pFactor>0)){pending.push('Indica equivalencia entre pieza y '+unit+' para tránsito');return {qty:0,pieces,applicable,pending};}
-    return {qty:pieces*pFactor,pieces,applicable,pending};
+    eventsLater.sort((a,b)=>a.date.localeCompare(b.date));
+    return {qty:qtyBefore,qtyBefore,qtyLater,qtyActive:qtyBefore+qtyLater,
+      pieces:totalPieces,activePieces,beforePieces,laterPieces,
+      applicable,pending:[...new Set(pending)],eventsBefore,eventsLater,docDates};
   }
   function derive(item, state, usageIndex){
     const cfg={...DEFAULTS,...state.settings};const o=state.overrides?.[item.sap]||{};
     const unit=selectedUnit(item,o),workingItem={...item,unit};
+    const supplier=supplierForSap(item.sap);
     const linkId=(o.usageId!==undefined)?String(o.usageId||''):String(item.autoLink||'');
     const manual=o.manual!==undefined&&o.manual!==null&&o.manual!=='';
     const stock=stockFromPdf(item,o);
     const receipt=cleanDate(cfg.receiptDate),snapshot=cleanDate(state.data.inventoryDate);
-    const transit=transitFor(item,state,o,unit,receipt,snapshot);
-    const manualInbound=Math.max(0,num(o.inbound,0)),inbound=transit.qty+manualInbound;
+    const next=receipt?nextDelivery(receipt,cfg.deliveryWeekdays):'';
+    const transit=transitFor(item,state,o,unit,receipt,next,snapshot);
+    const manualInbound=Math.max(0,num(o.inbound,0));
+    const inbound=transit.qtyActive+manualInbound;
     const context={...state.data,_recentWeight:cfg.recentWeight};
     const series=getSeries(workingItem,linkId,o,context,usageIndex);
-    const daily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
+    const baseDaily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
+    const adjustment=Math.max(-100,Math.min(300,num(cfg.demandAdjustment,0)));
+    const daily=baseDaily===null?null:Math.max(0,baseDaily*(1+adjustment/100));
     const reasons=[];
-    if(stock===null)reasons.push('Validar stock en '+unit+'; no se convierten unidades mixtas automáticamente');
+    if(stock===null)reasons.push('Validar stock en '+unit+'; no convertir inventario mixto automáticamente');
     if(['KG','L'].includes(item.unit)&&!o.stockVerified)reasons.push('Validar conversión del stock original a '+unit);
     if(['KG','L'].includes(unit)&&item.unit!==unit&&!o.stockVerified)reasons.push('Validar cambio a '+unit);
     if(daily===null)reasons.push(series.reason||'Capturar consumo diario');
-    if(!manual && linkId && !o.confirmed)reasons.push('Confirmar artículo del Motor 02');
-    if(!manual && series.valid && series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
+    if(!manual&&linkId&&!o.confirmed)reasons.push('Confirmar artículo del Motor 02');
+    if(!manual&&series.valid&&series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
     if(transit.pending.length)reasons.push(...transit.pending);
-    const next=receipt?nextDelivery(receipt,cfg.deliveryWeekdays):'';
     const elapsed=snapshot&&receipt?daysBetween(snapshot,receipt):NaN;
+    const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    const elapsedNow=snapshot?daysBetween(snapshot,today):NaN;
     const coverageDays=receipt&&next?daysBetween(receipt,next):NaN;
-    if(!receipt || !next)reasons.push('Seleccionar días y fecha de recepción');
+    if(!receipt||!next)reasons.push('Seleccionar días y fecha de recepción');
     if(!snapshot)reasons.push('Indicar fecha del conteo inicial');
-    else if(Number.isFinite(elapsed)&&elapsed<0)reasons.push('La recepción debe ser posterior al conteo inicial');
-    const safety=Math.max(0,num(cfg.safetyDays,0));
-    const min=daily==null||!Number.isFinite(elapsed)||elapsed<0?null:round(daily*(elapsed+safety),unit);
-    const max=daily==null||!Number.isFinite(elapsed)||elapsed<0||!Number.isFinite(coverageDays)?null:round(daily*(elapsed+coverageDays+safety),unit);
+    else if(Number.isFinite(elapsed)&&elapsed<0)reasons.push('Recepción anterior al conteo inicial');
+    const safety=Math.max(1,num(cfg.safetyDays,1));
+    const min=daily==null?null:round(daily*safety,unit);
+    const max=daily==null||!Number.isFinite(coverageDays)?null:round(daily*(coverageDays+safety),unit);
     const coverage=stock!==null&&daily>0?stock/daily:(daily===0?Infinity:null);
-    const multiple=(num(o.multiple,['PZA','UND'].includes(unit)?1:.001)>0)?num(o.multiple,['PZA','UND'].includes(unit)?1:.001):1;
-    const position=stock===null||!Number.isFinite(elapsed)||elapsed<0||daily===null?null:stock-daily*elapsed+inbound;
-    const required=daily==null||!Number.isFinite(coverageDays)?null:daily*(coverageDays+safety);
+    const multiple=num(o.multiple,['PZA','UND'].includes(unit)?1:0.001)>0?num(o.multiple,['PZA','UND'].includes(unit)?1:0.001):1;
+    let riskBefore=false;
+    if(stock!==null&&daily!==null&&Number.isFinite(elapsed)&&elapsed>=0){
+      for(let k=0;k<=elapsed;k++){
+        const day=addDays(snapshot,k);
+        const received=transit.eventsBefore.reduce((sum,e)=>sum+(e.date<=day?e.qty:0),0);
+        if(stock-daily*k+received < -1e-7){riskBefore=true;break;}
+      }
+    }
+    if(riskBefore)reasons.push('Posible quiebre de stock antes de la recepción; el pedido de esa fecha no lo corrige');
+    const position=stock===null||!Number.isFinite(elapsed)||elapsed<0||daily===null?null:stock-daily*elapsed+transit.qtyBefore+manualInbound;
+    const required=daily===null||!Number.isFinite(coverageDays)?null:daily*(coverageDays+safety);
     if(['L','KG'].includes(unit)&&daily>0&&position!==null&&required>position&&!(num(o.multiple,null)>0))reasons.push('Definir múltiplo de compra en '+unit);
-    const ready=reasons.length===0;
-    // Mostrar una propuesta calculada aunque falte confirmar el vínculo: NO es un pedido validado.
     let order=position!==null&&required!==null?0:null;
-    if(order!==null&&required>position&&daily>0){order=Math.max(0,Math.ceil((required-position-1e-9)/multiple)*multiple);order=Math.round(order*1e6)/1e6;}
+    if(order!==null){
+      // Balance del horizonte: un pedido futuro en tránsito SOLO compensa demanda
+      // después de su fecha de entrega. Se conserva stock de seguridad al final.
+      let gap=required-position-transit.qtyLater;
+      for(let k=0;k<=coverageDays;k++){
+        const day=addDays(receipt,k);
+        const received=transit.eventsLater.reduce((sum,e)=>sum+(e.date<day?e.qty:0),0);
+        // Comprobar el inventario justo ANTES de cada entrega del día:
+        // no se puede consumir algo que todavía va en camino.
+        gap=Math.max(gap,daily*k-position-received);
+      }
+      order=Math.max(0,Math.ceil((Math.max(0,gap)-1e-9)/multiple)*multiple);
+      order=Math.round(order*1e6)/1e6;
+    }
+    const ready=reasons.length===0;
     const status=!ready?'pendiente':order>0?'pedido':'listo';
     const source=manual?'manual':(linkId&&series.valid?'motor':'sin-historial');
-    const reviewSignature=[unit,stock,daily,inbound,receipt,next,order].join('|');
-    const reviewed=!!(o.reviewed&&o.reviewSignature===reviewSignature&&order===0);
-    return {item,unit,override:o,linkId,daily,stock,inbound,manualInbound,transit,position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,coverageDays,required,risk:position!==null&&position<0,reviewSignature,reviewed};
+    const reviewSignature=[supplier,unit,stock,baseDaily,adjustment,daily,manualInbound,transit.qtyBefore,transit.qtyLater,
+      JSON.stringify(transit.docDates),receipt,next,safety,multiple,order].join('|');
+    const reviewed=!!(o.reviewed&&o.reviewSignature===reviewSignature);
+    return {item,supplier,unit,override:o,linkId,baseDaily,adjustment,daily,stock,inbound,manualInbound,transit,
+      position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,elapsedNow,
+      coverageDays,required,risk:riskBefore||position!==null&&position<0,riskBefore,reviewSignature,reviewed};
   }
 
-  root.WOECore={DEFAULTS,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,selectedUnit,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round,transitFor};
+  root.WOECore={DEFAULTS,SUPPLIERS,supplierForSap,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,selectedUnit,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round,transitFor};
   if(typeof module==='object'&&module.exports)module.exports=root.WOECore;
 })(typeof window!=='undefined'?window:globalThis);
 
@@ -538,13 +643,21 @@ let usageIndex=new Map(), currentDetail=null, editingOptions=[], changed=false;
 let filter={search:'',family:'',status:''};
 let tableSort={key:'name',dir:'asc'};
 const LS='woe-pedidos-local-v2';
+const selectedRows=rows=>rows.filter(r=>state.settings.supplierFilter==='all'||!state.settings.supplierFilter||r.supplier===state.settings.supplierFilter);
+const supplierName=key=>key==='all'?'Todos los proveedores':Core.SUPPLIERS[key]||'Proveedor sin identificar';
 const todayLocal=()=>{const n=new Date();return [n.getFullYear(),String(n.getMonth()+1).padStart(2,'0'),String(n.getDate()).padStart(2,'0')].join('-');};
 const ES_DAYS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const longDate=d=>d?`${ES_DAYS[Core.weekday(d)]} ${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(0,4)}`:'—';
 const motorsReady=()=>['01','02','03'].every(id=>!!state.data['motor'+id]?.file);
 function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>t.classList.remove('show'),4200);}
 function scheduleSave(){changed=true;clearTimeout(scheduleSave._timer);scheduleSave._timer=setTimeout(()=>{try{localStorage.setItem(LS,JSON.stringify({data:state.data,settings:state.settings,overrides:state.overrides}));changed=false;}catch(e){toast('El navegador no pudo guardar automáticamente los datos. Descarga un respaldo privado para conservar tus cambios.');}},550);}
-function restore(){try{const saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved?.data?.inventory&&Array.isArray(saved.data.inventory)){state={...state,data:saved.data,settings:{...Core.DEFAULTS,...saved.settings},overrides:saved.overrides||{}};}}catch(e){console.warn('Sin sesión guardada',e);}reindex();}
+function restore(){try{const saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved?.data?.inventory&&Array.isArray(saved.data.inventory)){
+    state={...state,data:saved.data,settings:{...Core.DEFAULTS,...saved.settings},overrides:saved.overrides||{}};
+    // Antes de v5 el stock de seguridad predeterminado era 0. A partir de v5 mínimo 1 día.
+    state.settings.safetyDays=Math.max(1,Number(state.settings.safetyDays)||1);
+    state.settings.demandAdjustment=Math.max(-100,Math.min(300,Number(state.settings.demandAdjustment)||0));
+    if(!['all','lacteos','alsea','sirena'].includes(state.settings.supplierFilter))state.settings.supplierFilter='all';
+  }}catch(e){console.warn('Sin sesión guardada',e);}reindex();}
 function reindex(){usageIndex=Core.indexUsage(state.data);}
 function allResults(){return state.data.inventory.map(item=>Core.derive(item,state,usageIndex));}
 function effectiveResults(){return allResults().filter(x=>x.ready&&x.order>0);}
@@ -575,16 +688,26 @@ function populateTransitSelect(){
 }
 function renderTransit(){
  populateTransitSelect();
- const docs=transitDocs(),date=state.settings.receiptDate,snapshot=state.data.inventoryDate;
+ const docs=transitDocs(),receipt=state.settings.receiptDate,snapshot=state.data.inventoryDate;
+ const next=receipt?Core.nextDelivery(receipt,state.settings.deliveryWeekdays):'';
+ const all=docs.flatMap(d=>(d.rows||[]).map((r,i)=>({d,r,i})));
+ const lines=all.filter(x=>state.settings.supplierFilter==='all'||Core.supplierForSap(x.r.sap)===state.settings.supplierFilter);
  const inventory=new Set(state.data.inventory.map(x=>String(x.sap)));
- const lines=docs.flatMap(d=>(d.rows||[]).map((r,i)=>({d,r,i})));
- $('transitSummary').textContent=docs.length?`${docs.length} documento(s) · ${lines.length} renglón(es) · ${lines.filter(x=>inventory.has(String(x.r.sap))).length} con SAP del inventario. El tránsito solo se suma en la fecha de recepción aplicable.`:'Sin artículos en tránsito. Puedes cargar un PDF o agregar cantidades manualmente.';
+ const known=all.filter(x=>inventory.has(String(x.r.sap))).length;
+ $('transitSummary').textContent=docs.length?`${docs.length} documento(s) · ${all.length} renglón(es) en total · ${known} con SAP del inventario. ${lines.length} visibles según proveedor. Cada línea distingue la fecha de aplicación y su conversión a piezas.`:'Sin artículos en tránsito. Puedes cargar un PDF o agregar cantidades manualmente.';
  $('transitBody').innerHTML=lines.map(({d,r,i})=>{
-  const matches=inventory.has(String(r.sap));
-  const qualifies=d.deliveryDate&&snapshot&&date&&d.deliveryDate>snapshot&&d.deliveryDate<=date;
-  const status=!matches?'SAP ausente del inventario':r.pieces===null?'Revisar presentación':qualifies?'Se considera en el cálculo':d.deliveryDate<=snapshot?'Fecha anterior/al conteo':'Fuera del periodo';
-  return `<tr><td><strong>${esc(d.orderNumber)}</strong><span class="product-code">${esc(d.filename)} · ${esc(d.deliveryDate||'sin fecha')}</span></td><td><strong>${esc(r.name)}</strong><span class="product-code">SAP ${esc(r.sap)} · Prov. ${esc(r.vendorCode||'—')}</span></td><td class="numeric">${Core.format(r.qty,2)} ${esc(r.supplierUnit)}</td><td class="numeric">${r.pieces===null?'Por validar':Core.format(r.pieces,3)}</td><td><span class="${qualifies&&matches&&r.pieces!==null?'status-chip good':'cell-muted'}">${esc(status)}</span></td><td><button type="button" class="action-link" data-remove-transit="${esc(d.id)}" data-row-index="${i}" aria-label="Eliminar renglón">Quitar</button></td></tr>`;
- }).join('')||'<tr><td colspan="6" class="cell-muted" style="padding:17px">No hay registros de tránsito.</td></tr>';
+  const matched=inventory.has(String(r.sap));const date=d.deliveryDate;
+  const before=!!(date&&snapshot&&receipt&&date>snapshot&&date<=receipt);
+  const later=!!(date&&receipt&&next&&date>receipt&&date<next);
+  const status=!matched?'SAP ausente del inventario':r.pieces===null?'Conversión no identificada':!date?'Falta fecha de entrega':!snapshot?'Falta fecha de inventario':date<=snapshot?'Anterior al conteo · comprobar duplicado':before?'Se suma al stock a recibir':later?'Se descuenta durante la cobertura':'Fuera del horizonte seleccionado';
+  const product=state.data.inventory.find(x=>String(x.sap)===String(r.sap));
+  const override=state.overrides?.[String(r.sap)]||{};
+  const unit=product?Core.selectedUnit(product,override):'PZA';
+  const needsEquivalence=['KG','L'].includes(unit)&&!(Core.n(override.pieceFactor,null)>0);
+  const effectiveStatus=matched&&r.pieces!==null&&(before||later)&&needsEquivalence?'Pendiente de equivalencia PZA → '+unit:status;
+  const good=matched&&r.pieces!==null&&(before||later)&&!needsEquivalence;
+  return `<tr><td><strong>${esc(d.orderNumber)}</strong><span class="product-code">${esc(d.filename)} · ${esc(date||'sin fecha')}</span></td><td><strong>${esc(r.name)}</strong><span class="product-code">SAP ${esc(r.sap)} · Prov. ${esc(r.vendorCode||'—')}</span></td><td class="numeric">${Core.format(r.qty,2)} ${esc(r.supplierUnit)}</td><td class="numeric">${r.pieces===null?'Por validar':Core.format(r.pieces,3)+' PZA'}</td><td><span class="${good?'status-chip good':'cell-muted'}" title="${esc(effectiveStatus)}">${esc(effectiveStatus)}</span></td><td><button type="button" class="action-link" data-remove-transit="${esc(d.id)}" data-row-index="${i}" aria-label="Eliminar renglón">Quitar</button></td></tr>`;
+ }).join('')||'<tr><td colspan="6" class="cell-muted" style="padding:17px">No hay registros de tránsito para el proveedor seleccionado.</td></tr>';
 }
 function renderCalendar(){
   const today=todayLocal();$('todayDate').value=today;
@@ -597,24 +720,30 @@ function renderCalendar(){
   $('inventoryDate').value=state.data.inventoryDate||'';
   $('safetyDays').value=state.settings.safetyDays;
   $('recentWeight').value=state.settings.recentWeight;
+  $('demandAdjustment').value=state.settings.demandAdjustment||0;
+  $('supplierFilter').value=state.settings.supplierFilter||'all';
   const w=Number(state.settings.recentWeight);
   const s=(6*w/100+4*(100-w)/100).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2});
   $('weightExplanation').innerHTML=`<strong>¿Qué significa?</strong> La aplicación pondera <b>${w}%</b> del promedio de los últimos 7 días y <b>${100-w}%</b> del promedio de 28 días. A mayor porcentaje, más importancia tiene el consumo reciente. No modifica las capturas manuales.`;
   const current=state.settings.receiptDate,next=current?Core.nextDelivery(current,weekdays):'';
   const until=current?Core.daysBetween(today,current):NaN;
   const span=current&&next?Core.daysBetween(current,next):NaN;
-  $('calendarSummary').innerHTML=current?`<strong>Entrega seleccionada: ${longDate(current)}</strong><span>${until===0?'Se recibe hoy':until+' día(s) desde hoy'} · Siguiente entrega: ${longDate(next)} · Cobertura: ${span} día(s)</span>`:'Selecciona uno o más días de entrega.';
+  $('calendarSummary').innerHTML=current?`<strong>Entrega seleccionada: ${longDate(current)}</strong><span>${until===0?'Se recibe hoy':until+' día(s) desde hoy'} · Siguiente entrega: ${longDate(next)} · Cobertura: ${span} día(s) + ${state.settings.safetyDays} de seguridad</span><span>Variación global: ${(state.settings.demandAdjustment||0)>0?'+':''}${state.settings.demandAdjustment||0}%. Se aplica al consumo de todos los artículos.</span>`:'Selecciona uno o más días de entrega.';
 }
 function render(){
   sourceStatus();populateFamilies();renderCalendar();renderTransit();$('onboarding').classList.toggle('hidden',haveData());
   $('exportBtn').disabled=!haveData();$('printBtn').disabled=!haveData();
-  $('printMeta').textContent=`Inventario: ${state.data.inventoryDate||'pendiente'} · Recepción: ${state.settings.receiptDate||'pendiente'} · Siguiente: ${state.settings.receiptDate?Core.nextDelivery(state.settings.receiptDate,state.settings.deliveryWeekdays):'—'}`;
-  const rows=allResults();const ready=rows.filter(x=>x.ready).length;
-  $('statProducts').textContent=Core.format(rows.length,0);$('statReady').textContent=Core.format(ready,0);$('statPending').textContent=Core.format(rows.filter(x=>!x.ready&&!x.reviewed).length,0);$('statOrder').textContent=Core.format(rows.filter(x=>x.order>0).length,0);
+  const provider=state.settings.supplierFilter||'all';
+  $('printMeta').textContent=`Proveedor: ${supplierName(provider)} · Inventario: ${state.data.inventoryDate||'pendiente'} · Recepción: ${state.settings.receiptDate||'pendiente'} · Siguiente: ${state.settings.receiptDate?Core.nextDelivery(state.settings.receiptDate,state.settings.deliveryWeekdays):'—'} · Seguridad: ${state.settings.safetyDays} d · Ajuste: ${state.settings.demandAdjustment||0}%`;
+  const rows=selectedRows(allResults()),ready=rows.filter(x=>x.ready).length;
+  $('supplierCounter').textContent=`${rows.length} artículo(s) de este proveedor`;
+  $('statProducts').textContent=Core.format(rows.length,0);$('statReady').textContent=Core.format(ready,0);
+  $('statPending').textContent=Core.format(rows.filter(x=>!x.ready).length,0);
+  $('statOrder').textContent=Core.format(rows.filter(x=>x.order>0).length,0);
   renderTable(rows);renderLevels(rows);renderReconciliation(rows);renderTrendSelect(rows);renderContext();
 }
 function includesQuery(r,query){return !query||Core.norm([r.item.sap,r.item.name,r.item.family,r.linkId].join(' ')).includes(Core.norm(query));}
-function itemLabel(r){return `<strong class="product-name">${esc(r.item.name)}</strong><span class="product-code">SAP ${esc(r.item.sap)} · ${esc(r.item.family)}</span>`;}
+function itemLabel(r){return `<strong class="product-name">${esc(r.item.name)}</strong><span class="product-code">${esc(r.item.family)}</span>`;}
 function stockText(r){return r.stock===null?'<span class="cell-muted">Revisar</span>':`${Core.format(r.stock,3)} <small class="cell-muted">${esc(r.unit)}</small>`;}
 function sourceTag(r){
   if(r.manual)return '<span class="usage-tag manual">Manual</span>';
@@ -623,7 +752,7 @@ function sourceTag(r){
   return '<span class="usage-tag manual">Por capturar</span>';
 }
 function statusChip(r){
-  if(r.reviewed)return `<span class="status-chip reviewed" title="${esc(r.reasons.length?'Revisión realizada; validaciones pendientes: '+r.reasons.join(' · '):'Revisión finalizada')}">✓ Revisado${r.reasons.length?'*':''}</span>`;
+  // El botón Revisado es independiente: no debe ocultar estados de solicitud o validación.
   if(!r.ready&&r.order>0)return `<span title="${esc(r.reasons.join(' · '))}" class="status-chip provisional">◌ Validar pedido</span>`;
   if(!r.ready)return `<span title="${esc(r.reasons.join(' · '))}" class="status-chip warn">◌ Por revisar</span>`;
   if(r.order>0)return '<span class="status-chip good">● Solicitar</span>';
@@ -631,22 +760,25 @@ function statusChip(r){
 }
 function sortResults(rows){const {key,dir}=tableSort,sign=dir==='asc'?1:-1;
   return [...rows].sort((a,b)=>{
-   const val=r=>({name:r.item.name,source:r.source,stock:r.stock,inbound:r.inbound,position:r.position,daily:r.daily,coverage:r.coverage,order:r.order,status:r.reviewed?'revisado':r.status})[key];
+   const val=r=>({sap:r.item.sap,name:r.item.name,source:r.source,stock:r.stock,inbound:r.inbound,position:r.position,daily:r.daily,coverage:r.coverage,order:r.order,status:r.reviewed?'revisado':r.status})[key];
    const A=val(a),B=val(b);if(A==null&&B!=null)return 1;if(B==null&&A!=null)return -1;
    if(typeof A==='number'&&typeof B==='number')return sign*(A-B);
    return sign*String(A??'').localeCompare(String(B??''),'es',{numeric:true});
   });
 }
-function renderTable(rows){const q=$('searchInput').value||'';const fam=$('familyFilter').value;const status=$('statusFilter').value;
-  const display=sortResults(rows.filter(r=>includesQuery(r,q)&&(!fam||r.item.family===fam)&&(!status||(status==='manual'?!r.linkId&&!r.manual:status==='pendiente'?!r.ready&&!r.reviewed:status==='revisado'?r.reviewed:status==='pedido'?r.order>0:r.ready))));
-  $('tableCount').textContent=`${display.length} de ${rows.length} artículos · Haz clic en encabezados para ordenar`;
-  document.querySelectorAll('#mainTable th[data-sort]').forEach(th=>th.setAttribute('aria-sort',th.dataset.sort===tableSort.key?(tableSort.dir==='asc'?'ascending':'descending'):'none'));
-  $('mainBody').innerHTML=display.map(r=>{
-   const provisional=r.order!==null&&r.order>0&&!r.ready;
-   const request=r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<span class="${provisional?'order-provisional':''}"><b>${Core.format(r.order,3)} ${esc(r.unit)}</b>${provisional?'<small>Por validar</small>':''}</span>`:'0';
-   const reviewControl=r.order===0?`<button class="review-btn ${r.reviewed?'done':''}" data-review="${esc(r.item.sap)}" title="Marca la revisión visual. No omite validaciones de uso o unidades.">${r.reviewed?'✓ Revisado':'○ Revisar'}</button>`:'<span class="cell-muted">—</span>';
-   return `<tr data-order="${r.order>0?1:0}"><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.inbound>0?`<span class="inbound-count">+${Core.format(r.inbound,3)} ${esc(r.unit)}</span>`:'<span class="inbound-none">—</span>'}</td><td class="numeric">${r.position===null?'—':`<span class="${r.risk?'risk-text':''}">${Core.format(r.position,2)} ${esc(r.unit)}</span>`}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo diario en ${esc(r.unit)}" />`:`${Core.format(r.daily,3)} ${esc(r.unit)}`}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${request}</td><td>${statusChip(r)}</td><td>${reviewControl}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`;
-  }).join('')||'<tr><td colspan="11" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos.</td></tr>';
+function renderTable(rows){const q=$('searchInput').value||'';const fam=$('familyFilter').value,status=$('statusFilter').value;
+ const display=sortResults(rows.filter(r=>includesQuery(r,q)&&(!fam||r.item.family===fam)&&(!status||(status==='manual'?!r.linkId&&!r.manual:status==='pendiente'?!r.ready:status==='revisado'?r.reviewed:status==='pedido'?r.order>0:r.ready))));
+ $('tableCount').textContent=`${display.length} de ${rows.length} artículos · Haz clic en encabezados para ordenar`;
+ document.querySelectorAll('#mainTable th[data-sort]').forEach(th=>th.setAttribute('aria-sort',th.dataset.sort===tableSort.key?(tableSort.dir==='asc'?'ascending':'descending'):'none'));
+ $('mainBody').innerHTML=display.map(r=>{
+  const provisional=r.order!==null&&r.order>0&&!r.ready;
+  const request=r.order===null?'<span class="cell-muted">—</span>':r.order>0?`<span class="${provisional?'order-provisional':''}"><b>${Core.format(r.order,3)} ${esc(r.unit)}</b>${provisional?'<small>Por validar</small>':''}</span>`:'0';
+  const reviewControl=`<button type="button" class="review-btn ${r.reviewed?'done':''}" data-review="${esc(r.item.sap)}" title="Revisión visual del artículo; no confirma automáticamente un pedido ni reemplaza las validaciones técnicas.">${r.reviewed?'✓ Revisado':'○ Revisar'}</button>`;
+  const activePieces=r.transit.activePieces||0,allPieces=r.transit.pieces||0;
+  let inboundText=activePieces>0?`<span class="inbound-count">+${Core.format(activePieces,3)} PZA</span><span class="inbound-detail">${r.transit.beforePieces>0?Core.format(r.transit.beforePieces,3)+' al recibir':''}${r.transit.laterPieces>0?' · '+Core.format(r.transit.laterPieces,3)+' posterior':''}</span>`:allPieces>0?`<span class="inbound-warn">${Core.format(allPieces,3)} PZA fuera de periodo</span>`:'<span class="inbound-none">—</span>';
+  if(r.manualInbound>0)inboundText+=`<span class="inbound-detail">+${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</span>`;
+  return `<tr data-order="${r.order>0?1:0}"><td><span class="sap-code">${esc(r.item.sap)}</span></td><td>${itemLabel(r)}</td><td>${sourceTag(r)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${inboundText}</td><td class="numeric">${r.position===null?'<span class="cell-muted">Validar stock</span>':`<span class="${r.risk?'risk-text':''}">${Core.format(r.position,2)} ${esc(r.unit)}</span>`}</td><td class="numeric light">${r.daily===null?`<input class="inline-manual" data-quick-use="${esc(r.item.sap)}" type="number" min="0" step="any" placeholder="Capturar" title="Consumo base diario en ${esc(r.unit)}; el incremento global se aplica después" />`:`${Core.format(r.daily,3)} ${esc(r.unit)}`}</td><td class="numeric light">${r.coverage===Infinity?'>99':r.coverage===null?'—':Core.format(r.coverage,1)+' d'}</td><td class="numeric">${request}</td><td>${statusChip(r)}</td><td>${reviewControl}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`;
+ }).join('')||'<tr><td colspan="12" class="cell-muted" style="padding:25px;text-align:center">No se encontraron artículos de este proveedor con esos filtros.</td></tr>';
 }
 function renderLevels(rows){const q=$('levelSearch').value||'';const family=$('levelFilter').value;const d=rows.filter(r=>includesQuery(r,q)&&(!family||r.item.family===family));
  $('levelsBody').innerHTML=d.map(r=>`<tr><td>${itemLabel(r)}</td><td class="numeric">${r.daily===null?'—':Core.format(r.daily,3)}</td><td class="numeric">${r.min===null?'—':Core.format(r.min,3)}</td><td class="numeric">${r.max===null?'—':Core.format(r.max,3)}</td><td class="numeric">${stockText(r)}</td><td class="numeric">${r.coverage===null?'—':r.coverage===Infinity?'>99':Core.format(r.coverage,1)}</td><td>${statusChip(r)}</td><td><button class="action-link" data-edit="${esc(r.item.sap)}">Editar</button></td></tr>`).join('');
@@ -674,7 +806,7 @@ function renderTrend(){const sap=$('trendItemSelect').value;const r=sap?Core.der
   const lines=[0,.25,.5,.75,1].map(t=>`<line x1="${pl}" y1="${y(top*t)}" x2="${W-pr}" y2="${y(top*t)}" stroke="#e4ebe4" stroke-dasharray="4 4"/><text x="${pl-10}" y="${y(top*t)+4}" text-anchor="end" font-size="11" fill="#91a497">${esc(Core.format(top*t,2))}</text>`).join('');
   const labels=[0,7,14,21,27].map(i=>`<text x="${x(i)}" y="${H-11}" text-anchor="middle" fill="#92a79a" font-size="11">${esc(s.series[i].date.slice(5))}</text>`).join('');
   $('chartArea').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica de consumo diario de las últimas cuatro semanas"><defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#006241" stop-opacity=".18"/><stop offset="100%" stop-color="#006241" stop-opacity="0"/></linearGradient></defs>${lines}<path d="${fill}" fill="url(#trendGrad)"/><path d="${path}" fill="none" stroke="#006241" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>${points.filter((_,i)=>i%3===0).map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.7" fill="#006241"/>`).join('')}${labels}</svg>`;
-  $('trendNotes').textContent=`Las fechas sin registro de consumo se muestran como cero dentro del periodo histórico. Conversión: ${s.units.join(' · ')}. El promedio pondera ${state.settings.recentWeight}% de los últimos 7 días y ${100-state.settings.recentWeight}% de los 28 días.`;
+  $('trendNotes').textContent=`Las fechas sin consumo se muestran como cero. Conversión: ${s.units.join(' · ')}. Promedio ponderado: ${state.settings.recentWeight}% (7 días) y ${100-state.settings.recentWeight}% (28 días). Variación global sobre el promedio base: ${state.settings.demandAdjustment||0}%. Consumo ajustado usado para pedir: ${Core.format(r.daily,3)} ${r.unit}/día.`;
 }
 function renderContext(){const sales=state.data.motor01?.sales||[];const last=sales[sales.length-1];
   $('lastTransactions').textContent=last?Core.format(last.trxs,0):'—';$('lastTransactionsDay').textContent=last?.date||'Sin datos';$('lastSales').textContent=last?'$'+Core.format(last.sales,2):'—';$('posLines').textContent=Core.format(state.data.motor03?.sales?.length||0,0);
@@ -700,14 +832,14 @@ function updateUsageSelect(query=''){const list=availableUsageOptions(query);con
 function openDetail(sap){const item=state.data.inventory.find(x=>x.sap===sap);if(!item)return;
   currentDetail=sap;const r=Core.derive(item,state,usageIndex),o=detailOverride();
   $('detailTitle').textContent=item.name;$('detailSubtitle').textContent=`SAP ${sap} · ${item.family} · ${r.unit}`;
-  $('detailSource').innerHTML=`<strong>Inventario original</strong><div>PIEZAS: ${Core.format(item.pieces,3)} · CANT. UNID.: ${item.bulk===null?'—':Core.format(item.bulk,3)} ${esc(item.unit)}</div><div>En tránsito PDF aplicable: ${Core.format(r.transit.pieces,3)} PZA · Manual: ${Core.format(r.manualInbound,3)} ${esc(r.unit)}</div><div>Sugerencia de asociación: ${item.suggestions?.[0]?`${esc(item.suggestions[0].name)} (${Core.format(item.suggestions[0].score,1)}%)`:'ninguna'}</div>`;
+  $('detailSource').innerHTML=`<strong>Proveedor: ${esc(supplierName(r.supplier))}</strong><div>La unidad predeterminada del pedido es PZA. Si cambias a KG/L, valida equivalencias.</div><strong>Inventario original</strong><div>PIEZAS: ${Core.format(item.pieces,3)} · CANT. UNID.: ${item.bulk===null?'—':Core.format(item.bulk,3)} ${esc(item.unit)}</div><div>Tránsito documentado: ${Core.format(r.transit.pieces,3)} PZA · Aplicable al horizonte: ${Core.format(r.transit.activePieces,3)} PZA (${Core.format(r.transit.beforePieces,3)} hasta recepción + ${Core.format(r.transit.laterPieces,3)} posterior). Ajuste manual: ${Core.format(r.manualInbound,3)} ${esc(r.unit)}</div><div>Sugerencia de asociación: ${item.suggestions?.[0]?`${esc(item.suggestions[0].name)} (${Core.format(item.suggestions[0].score,1)}%)`:'ninguna'}</div>`;
   $('editUnit').value=r.unit;
   $('editUsageId').value='';updateUsageSelect();$('editUsageId').value=r.linkId||'';
   $('usageSearch').value='';$('editStock').value=r.stock===null?'':r.stock;
   $('editInbound').value=o.inbound??0;$('editManual').value=o.manual??'';
   $('editPieceFactor').value=o.pieceFactor??'';
   const defaultFactor=r.linkId?(state.data.motor02.usageCatalog||[]).find(x=>String(x.id)===String(r.linkId))?.usageUnit:'';
-  $('editFactor').value=o.factor??(Core.unitFactor(r.unit,defaultFactor)??'');
+  $('editFactor').value=o.factor??(Core.unitFactor(r.unit,defaultFactor,item.name)??'');
   $('editMultiple').value=o.multiple??(['PZA','UND'].includes(r.unit)?1:'');
   $('editNote').value=o.note||'';$('editConfirmed').checked=!!o.confirmed;
   $('editStockVerified').checked=!!o.stockVerified;
@@ -716,7 +848,7 @@ function openDetail(sap){const item=state.data.inventory.find(x=>x.sap===sap);if
 function updateUnitHints(){
  const item=detailItem();if(!item)return;
  const unit=$('editUnit').value;
- $('stockUnitLabel').textContent=`${unit} · Edita el stock para recalcular (0 permitido)`;
+ $('stockUnitLabel').textContent=`${unit} · 0 permitido. Si el PDF usa KG/L, confirma explícitamente la equivalencia antes de finalizar el pedido`;
  $('editInboundUnit').textContent=`Adicional a PDFs, en ${unit}`;
  $('pieceConversionHint').textContent=`${unit} por cada PZA del tránsito PDF; ${['PZA','UND'].includes(unit)?'normalmente 1':'captura equivalencia validada'}`;
  $('conversionHint').textContent=`${unit} por unidad usada por el motor`;
@@ -734,7 +866,7 @@ function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=i
 }
 function updateDetailMath(){if(!currentDetail)return;const item=detailItem();const temp={...state,overrides:{...state.overrides,[currentDetail]:readDetailForm()}};
   const r=Core.derive(item,temp,usageIndex);
-  $('detailMath').innerHTML=`<strong>Previsualización actualizada</strong><div>Uso estimado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(r.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} ${esc(r.unit)} · Necesario: ${Core.format(r.required,3)} ${esc(r.unit)}</div><div>En tránsito: ${Core.format(r.transit.pieces,3)} PZA PDF + ${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'No calculable':Core.format(r.order,3)+' '+esc(r.unit)}</strong> ${r.ready?'✓ Validado':' · Propuesta sujeta a validación'}</div>`;
+  $('detailMath').innerHTML=`<strong>Previsualización actualizada</strong><div>Uso diario base: ${r.baseDaily===null?'Pendiente':Core.format(r.baseDaily,3)+' '+esc(r.unit)} · Ajuste global: ${r.adjustment>0?'+':''}${r.adjustment}%</div><div>Uso ajustado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(r.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} ${esc(r.unit)} · Necesario: ${Core.format(r.required,3)} ${esc(r.unit)}</div><div>Tránsito considerado: ${Core.format(r.transit.beforePieces,3)} PZA hasta recepción + ${Core.format(r.transit.laterPieces,3)} PZA durante cobertura · ${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</div><div>El pedido considera ${Math.max(1,state.settings.safetyDays)} día(s) de seguridad; nunca utiliza un tránsito posterior antes de su fecha prevista.</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'No calculable':Core.format(r.order,3)+' '+esc(r.unit)}</strong> ${r.ready?'✓ Validado':' · Propuesta sujeta a validación'}</div>`;
   $('detailWarnings').textContent=r.reasons.length?r.reasons.join(' · '):'El artículo tiene los datos necesarios para calcular el pedido.';
 }
 function closeDetail(){$('detailOverlay').classList.add('hidden');currentDetail=null;}
@@ -832,12 +964,31 @@ async function uploadMotor(n,file){let out;
 }
 function rebuildSuggestions(){
  const catalog=state.data.motor02?.usageCatalog||[];
- const ids=new Set(catalog.map(x=>String(x.id)));
  for(const item of state.data.inventory){
    item.suggestions=window.WOEMatcher.suggest(item,catalog);
    delete item.autoLink;
    const best=item.suggestions[0],second=item.suggestions[1];
-   if(best&&best.score>=86&&(!second||best.score-second.score>=9)&&Core.unitFactor(item.unit,best.usageUnit)>0)item.autoLink=best.id;
+   if(best&&best.score>=86&&(!second||best.score-second.score>=9)&&Core.unitFactor('PZA',best.usageUnit,item.name)>0)item.autoLink=best.id;
+ }
+ // El PDF de proveedor incluye código de material del proveedor Y SAP cliente.
+ // Si ese código figura de manera única al principio del nombre del Motor 02,
+ // permite relacionar el consumo con el SAP sin confundir ambos identificadores.
+ const byVendor=new Map();
+ for(const entry of catalog){const match=String(entry.name||'').match(/^\s*(\d{5,8})(?:\s|$)/);
+   if(!match)continue;
+   if(!byVendor.has(match[1]))byVendor.set(match[1],[]);
+   byVendor.get(match[1]).push(entry);
+ }
+ const inventory=new Map(state.data.inventory.map(item=>[String(item.sap),item]));
+ for(const doc of transitDocs())for(const line of doc.rows||[]){
+   const item=inventory.get(String(line.sap)),matches=byVendor.get(String(line.vendorCode||''))||[];
+   if(!item||matches.length!==1)continue;
+   const match=matches[0];
+   if(!(Core.unitFactor('PZA',match.usageUnit,item.name)>0))continue;
+   if(item.autoLink&&item.autoLink!==String(match.id))continue;
+   item.autoLink=String(match.id);
+   item.suggestions=[{id:String(match.id),name:match.name,usageUnit:match.usageUnit,score:100,origin:'Código del material del proveedor'},
+     ...item.suggestions.filter(x=>String(x.id)!==String(match.id))].slice(0,5);
  }
 }
 // ---------- INVENTARIO Y RESPALDOS ----------
@@ -897,7 +1048,7 @@ async function uploadTransit(file){
  const doc=await window.WOETransitPDF.parse(file);
  state.data.transitDocs=transitDocs().filter(x=>x.id!==doc.id);
  state.data.transitDocs.push(doc);
- scheduleSave();render();$('transitContent').classList.remove('hidden');
+ rebuildSuggestions();scheduleSave();render();$('transitContent').classList.remove('hidden');
  toast(`Pedido ${doc.orderNumber}: ${doc.rows.length} renglones cargados; entrega ${doc.deliveryDate}.`);
 }
 function addTransitManual(){
@@ -910,7 +1061,7 @@ function addTransitManual(){
 }
 function removeTransit(id,index){
  state.data.transitDocs=transitDocs().map(d=>d.id!==id?d:{...d,rows:d.rows.filter((_,i)=>i!==index)}).filter(d=>d.rows.length);
- scheduleSave();render();$('transitContent').classList.remove('hidden');toast('Se quitó el registro de tránsito.');
+ rebuildSuggestions();scheduleSave();render();$('transitContent').classList.remove('hidden');toast('Se quitó el registro de tránsito.');
 }
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),6000);}
 function saveBackup(){if(!haveData()){toast('Carga primero tus datos iniciales.');return;}
@@ -940,7 +1091,7 @@ function sheetXML(matrix,headerAt=0){
 }
 async function createXlsx(sheets){const zip=new JSZip(),ns='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
   let types=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`;
-  let entries='',links='';sheets.forEach((s,i)=>{types+=`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;entries+=`<sheet name="${xesc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`;links+=`<Relationship Id="rId${i+1}" Type="${ns}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`;zip.file(`xl/worksheets/sheet${i+1}.xml`,sheetXML(s.rows,s.name==='Pedido WOE'?3:0));});
+  let entries='',links='';sheets.forEach((s,i)=>{types+=`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;entries+=`<sheet name="${xesc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`;links+=`<Relationship Id="rId${i+1}" Type="${ns}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`;zip.file(`xl/worksheets/sheet${i+1}.xml`,sheetXML(s.rows,s.name==='Pedido WOE'?4:0));});
   zip.file('[Content_Types].xml',types+'</Types>');
   zip.file('_rels/.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${ns}/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
   zip.file('xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="${ns}"><sheets>${entries}</sheets></workbook>`);
@@ -950,20 +1101,29 @@ async function createXlsx(sheets){const zip=new JSZip(),ns='http://schemas.openx
 }
 async function exportXlsx(){if(!haveData()){toast('Primero carga el inventario.');return;}
   $('exportBtn').disabled=true;try{
-    const rows=allResults();const date=todayLocal();
-    const sheet1=[['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date],['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],['Inventario contado: '+state.data.inventoryDate+' · Revisar códigos, cantidades y múltiplos antes de solicitar.'],['SAP','Producto','Familia','Unidad','Stock inicial','Stock a recepción','En tránsito total','En tránsito PDF (PZA)','Uso diario','Mínimo','Máximo','Cantidad a solicitar','Múltiplo','Origen','Nota']];
-    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([r.item.sap,r.item.name,r.item.family,r.unit,r.stock,r.position,r.inbound,r.transit.pieces,r.daily,r.min,r.max,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.override.note||'']);
-    const sheet2=[['SAP','Producto','Familia','Stock inicial','Unidad','Uso diario','Mínimo','Máximo','Cobertura días','En tránsito','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido (puede ser provisional)','Estado','Revisado','Motivo pendiente']];
-    const sheet3=[['SAP','Producto','Fecha','Uso convertido a unidad del inventario','Unidad','Origen','ID de uso']];
-    const sheet4=[['SAP','Producto','Razón de revisión','ID uso propuesto','Confianza de nombre']];
-    for(const r of rows){sheet2.push([r.item.sap,r.item.name,r.item.family,r.stock,r.unit,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.inbound,r.position,r.receipt,r.next,r.order,r.ready?'Validado':'Pendiente',r.reviewed?'Sí':'No',r.reasons.join('; ')]);
-      if(r.series?.valid)for(const p of r.series.series)sheet3.push([r.item.sap,r.item.name,p.date,p.value,r.unit,r.manual?'Manual':'Motor 02',r.linkId]);
-      if(!r.ready)sheet4.push([r.item.sap,r.item.name,r.reasons.join('; '),r.item.suggestions?.[0]?.id||'',r.item.suggestions?.[0]?.score||0]);
+    const rows=selectedRows(allResults()),date=todayLocal(),chosen=state.settings.supplierFilter||'all';
+    const heading=['PEDIDO WOE · '+(state.data.storeName||'Tienda'),'Generado: '+date];
+    const sheet1=[heading,['Proveedor: '+supplierName(chosen)],
+      ['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],
+      ['Conteo: '+state.data.inventoryDate+' · Seguridad: '+Math.max(1,Number(state.settings.safetyDays)||1)+' día(s) · Variación de demanda: '+(state.settings.demandAdjustment||0)+'%. Validar SAP, stock, múltiplos y fechas de tránsito.'],
+      ['Proveedor','SAP','Producto','Familia','Unidad de pedido','Stock inicial','En tránsito PZA del horizonte','Tránsito hasta recepción PZA','Tránsito posterior PZA','Stock proyectado a recibir','Consumo base por día','Consumo ajustado por día','Seguridad (días)','Necesario al final de cobertura','Cantidad a solicitar','Múltiplo de compra','Origen','Revisión visual','Nota']];
+    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([supplierName(r.supplier),r.item.sap,r.item.name,r.item.family,r.unit,r.stock,r.transit.activePieces,r.transit.beforePieces,r.transit.laterPieces,r.position,r.baseDaily,r.daily,Math.max(1,Number(state.settings.safetyDays)||1),r.required,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.reviewed?'Sí':'No',r.override.note||'']);
+    const sheet2=[['Proveedor','SAP','Producto','Familia','Stock inicial','Unidad','Uso diario base','Variación global (%)','Uso diario ajustado','Mínimo','Máximo','Cobertura días','Tránsito total PZA','Tránsito horizonte PZA','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido (puede ser provisional)','Estado','Revisión','Motivo pendiente']];
+    const sheet3=[['Proveedor','SAP','Producto','Fecha','Uso de Motor 02 (sin ajuste global)','Unidad','Origen','ID de uso']];
+    const sheet4=[['Proveedor','SAP','Producto','Cantidad provisional','Razón pendiente','Revisión','ID uso propuesto','Confianza nombre']];
+    for(const r of rows){sheet2.push([supplierName(r.supplier),r.item.sap,r.item.name,r.item.family,r.stock,r.unit,r.baseDaily,r.adjustment,r.daily,r.min,r.max,Number.isFinite(r.coverage)?r.coverage:null,r.transit.pieces,r.transit.activePieces,r.position,r.receipt,r.next,r.order,r.ready?'Validado':'Pendiente',r.reviewed?'Sí':'No',r.reasons.join('; ')]);
+      if(r.series?.valid)for(const p of r.series.series)sheet3.push([supplierName(r.supplier),r.item.sap,r.item.name,p.date,p.value,r.unit,r.manual?'Manual':'Motor 02',r.linkId]);
+      if(!r.ready)sheet4.push([supplierName(r.supplier),r.item.sap,r.item.name,r.order,r.reasons.join('; '),r.reviewed?'Sí':'No',r.item.suggestions?.[0]?.id||'',r.item.suggestions?.[0]?.score||0]);
     }
-    const transitSheet=[['Pedido proveedor','Archivo','Fecha de entrega','SAP cliente','Artículo','Cantidad original','Unidad original','Piezas calculadas','Código proveedor']];
-    for(const d of transitDocs())for(const l of d.rows||[])transitSheet.push([d.orderNumber,d.filename,d.deliveryDate,l.sap,l.name,l.qty,l.supplierUnit,l.pieces,l.vendorCode]);
+    const transitSheet=[['Proveedor','Pedido de proveedor','Archivo','Entrega prevista','SAP cliente','Artículo','Cantidad original','Unidad original','Piezas calculadas','Material proveedor','Aplicación en horizonte']];
+    const next=state.settings.receiptDate?Core.nextDelivery(state.settings.receiptDate,state.settings.deliveryWeekdays):'';
+    for(const d of transitDocs())for(const l of d.rows||[]){const supplier=Core.supplierForSap(l.sap);if(chosen!=='all'&&chosen!==supplier)continue;
+      const apply=d.deliveryDate>state.data.inventoryDate&&!!next&&d.deliveryDate<next;
+      transitSheet.push([supplierName(supplier),d.orderNumber,d.filename,d.deliveryDate,l.sap,l.name,l.qty,l.supplierUnit,l.pieces,l.vendorCode,apply?'Sí':'Fuera del horizonte']);
+    }
     const blob=await createXlsx([{name:'Pedido WOE',rows:sheet1},{name:'Maximos y Minimos',rows:sheet2},{name:'Tendencia de Uso',rows:sheet3},{name:'Pendientes',rows:sheet4},{name:'En Transito',rows:transitSheet}]);
-    downloadBlob(blob,`Pedido_WOE_${state.data.storeId||'Tienda'}_${date}.xlsx`);toast('Excel creado: pedido, máximos y mínimos, tendencia y pendientes.');
+    downloadBlob(blob,`Pedido_WOE_${chosen==='all'?'TODOS':chosen.toUpperCase()}_${state.data.storeId||'Tienda'}_${date}.xlsx`);
+    toast('Excel creado para '+supplierName(chosen)+'. Solo las cantidades validadas aparecen en Pedido WOE; revisa Pendientes.');
   }catch(e){console.error(e);toast('No se pudo exportar: '+e.message);}finally{$('exportBtn').disabled=false;}
 }
 // ---------- EVENTOS ----------
@@ -990,17 +1150,19 @@ function init(){restore();render();$('transitManualDate').value=todayLocal();
   }));
   $('receiptDate').addEventListener('change',e=>{state.settings.receiptDate=e.target.value;scheduleSave();render();});
   $('inventoryDate').addEventListener('change',e=>{state.data.inventoryDate=e.target.value;scheduleSave();render();});
-  for(const key of ['safetyDays','recentWeight'])$(key).addEventListener('change',()=>{
-    const v=Number($(key).value);const maxes={safetyDays:30,recentWeight:100};
-    state.settings[key]=Math.min(maxes[key],Math.max(0,Number.isFinite(v)?v:Core.DEFAULTS[key]));
+  for(const key of ['safetyDays','recentWeight','demandAdjustment'])$(key).addEventListener('change',()=>{
+    const v=Number($(key).value);const maxes={safetyDays:30,recentWeight:100,demandAdjustment:300};
+    const mins={safetyDays:1,recentWeight:0,demandAdjustment:-100};
+    state.settings[key]=Math.min(maxes[key],Math.max(mins[key],Number.isFinite(v)?v:Core.DEFAULTS[key]));
     scheduleSave();render();
   });
+  $('supplierFilter').addEventListener('change',e=>{state.settings.supplierFilter=e.target.value;scheduleSave();render();});
   for(const [id,fn] of [['searchInput',()=>renderTable(allResults())],['familyFilter',()=>renderTable(allResults())],['statusFilter',()=>renderTable(allResults())],['levelSearch',()=>renderLevels(allResults())],['levelFilter',()=>renderLevels(allResults())]])$(id).addEventListener(id.includes('Filter')?'change':'input',fn);
   $('trendItemSelect').addEventListener('change',renderTrend);
   document.addEventListener('click',e=>{
     const rm=e.target.closest('[data-remove-transit]');if(rm){removeTransit(rm.dataset.removeTransit,Number(rm.dataset.rowIndex));return;}
     const rev=e.target.closest('[data-review]');if(rev){const sap=rev.dataset.review,item=state.data.inventory.find(i=>i.sap===sap);if(!item)return;
-      const r=Core.derive(item,state,usageIndex);if(r.order!==0){toast('Solo puedes marcar como revisados los artículos cuya propuesta es cero.');return;}
+      const r=Core.derive(item,state,usageIndex);
       const old=state.overrides[sap]||{};state.overrides[sap]={...old,reviewed:!r.reviewed,reviewSignature:r.reviewSignature};scheduleSave();render();toast(!r.reviewed?'Artículo marcado como revisado. Las validaciones técnicas siguen visibles.':'Revisión revertida.');return;
     }
     const b=e.target.closest('[data-edit]');if(b)openDetail(b.dataset.edit);
@@ -1014,13 +1176,13 @@ function init(){restore();render();$('transitManualDate').value=todayLocal();
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('detailOverlay').classList.contains('hidden'))closeDetail();});
   $('usageSearch').addEventListener('input',e=>{const was=$('editUsageId').value;updateUsageSelect(e.target.value);$('editUsageId').value=was;});
   $('editUsageId').addEventListener('change',()=>{const item=detailItem();const id=$('editUsageId').value;
-    const u=(state.data.motor02.usageCatalog||[]).find(x=>x.id===id);$('editFactor').value=u?Core.unitFactor($('editUnit').value,u.usageUnit)??'':'';$('editConfirmed').checked=false;updateDetailMath();});
+    const u=(state.data.motor02.usageCatalog||[]).find(x=>x.id===id);$('editFactor').value=u?Core.unitFactor($('editUnit').value,u.usageUnit,item.name)??'':'';$('editConfirmed').checked=false;updateDetailMath();});
   $('editUnit').addEventListener('change',()=>{
     // No interpretar la cifra de stock anterior como si estuviera en la nueva unidad.
     const item=detailItem(),newUnit=$('editUnit').value,oldUnit=Core.selectedUnit(item,detailOverride());
     if(newUnit!==oldUnit){$('editStock').value='';$('editMultiple').value=['PZA','UND'].includes(newUnit)?1:'';}
     const id=$('editUsageId').value,u=(state.data.motor02?.usageCatalog||[]).find(x=>String(x.id)===String(id));
-    $('editFactor').value=u?Core.unitFactor(newUnit,u.usageUnit)??'':'';
+    $('editFactor').value=u?Core.unitFactor(newUnit,u.usageUnit,item.name)??'':'';
     updateUnitHints();updateDetailMath();
   });
   document.querySelectorAll('.drawer-form input,.drawer-form select').forEach(el=>el.addEventListener('input',updateDetailMath));
