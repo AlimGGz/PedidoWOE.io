@@ -136,6 +136,7 @@
 .reset-zone{margin:26px 0 0}.reset-actions{display:flex;flex-wrap:wrap;gap:9px}.btn.danger{background:#fff3ef;border:1px solid #e2bcb1;color:#95391c}.btn.danger:hover{background:#fbe4de}
 @media(max-width:950px){.traffic-chart{gap:6px;padding:14px 8px}.traffic-num{font-size:10px}.traffic-day{font-size:9px}.filters{flex-wrap:wrap}.multi-filter{flex:1}.sources{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.traffic-chart{overflow-x:auto;grid-template-columns:repeat(7,minmax(75px,1fr))}.traffic-toggle{white-space:normal}.demand-slider{flex-wrap:wrap}.order-scroll{height:65vh}.order-scroll th:nth-child(2),.order-scroll td:nth-child(2){min-width:210px;max-width:220px}.multi-filter{max-width:none}}
+.page-heading .header-buttons{flex-wrap:wrap;justify-content:flex-end;min-width:0}.supplement-hint{font-size:11px!important;line-height:1.45!important;color:#547765!important;margin:7px 0 0!important;max-width:720px}.supplement-hint.loaded{color:#096542!important}.supplement-top{border-color:#b4d6bf!important;background:#f6fbf6!important}.usage-tag.alt{background:#edf2fa;color:#45628b;border:1px solid #dbe4ef}.supplement-hint strong{font-weight:800}@media(max-width:900px){.page-heading{flex-wrap:wrap}.page-heading .header-buttons{width:100%;justify-content:flex-start}.page-heading .header-buttons .btn{white-space:normal}}
 </style>
 </head>
 <body>
@@ -157,12 +158,12 @@
 <main class="main">
 <header class="topbar"><div class="breadcrumb">OPERACIÓN <span> / </span><strong>Planeación de pedidos</strong></div><div class="top-actions"><span class="pill soft" id="storeTag">Sin datos</span><button class="icon-btn" id="helpBtn" title="Ayuda">?</button></div></header>
 <div class="content">
-<section class="page-heading"><div><div class="eyebrow">WOE · PLANEACIÓN DE INVENTARIOS</div><h1 id="pageTitle">Pedido WOE</h1><p id="pageSubtitle">Proyección basada en el inventario contado y en el consumo ideal registrado.</p><div class="print-meta" id="printMeta"></div></div><div class="header-buttons"><button class="btn ghost" id="exportBtn">↓ Exportar Excel</button><button class="btn primary" id="printBtn">▤ Imprimir / PDF</button></div></section>
+<section class="page-heading"><div><div class="eyebrow">WOE · PLANEACIÓN DE INVENTARIOS</div><h1 id="pageTitle">Pedido WOE</h1><p id="pageSubtitle">Proyección con inventario contado, Motor 02 y promedio diario alterno por SAP cuando falten consumos.</p><div class="print-meta" id="printMeta"></div><p class="supplement-hint" id="supplementHint" aria-live="polite">Uso diario alterno: sin cargar. Complementa únicamente consumos vacíos o cero del Motor 02.</p></div><div class="header-buttons"><button class="btn ghost" type="button" id="supplementBtn" title="Si el Motor 02 tiene uso diario igual a cero o vacío, usa el Promedio del Excel por código SAP">↥ Cargar usos alternos</button><input id="supplementInput" type="file" accept=".xlsx,.xlsm" hidden/><button class="btn ghost" id="exportBtn">↓ Exportar Excel</button><button class="btn primary" id="printBtn">▤ Imprimir / PDF</button></div></section>
 <div class="onboarding hidden" id="onboarding"><div class="on-icon">↥</div><div><strong>Comienza con tu inventario inicial</strong><p><b>Primero</b> carga el inventario inicial (PDF o Excel) para obtener SAP y stock en piezas. <b>Después</b> importa los tres motores Excel (.xlsm/.xlsx) para calcular el uso diario. No necesitas JSON.</p></div><button class="btn primary" id="onboardingImport">Comenzar carga</button></div>
 <section class="stats" id="stats"><article class="metric"><div class="metric-label">Artículos del inventario <span>▣</span></div><div class="metric-main" id="statProducts">0</div><div class="metric-note">Catálogo de códigos SAP</div></article><article class="metric"><div class="metric-label">Listos para pedido <span>✓</span></div><div class="metric-main" id="statReady">0</div><div class="metric-note">Consumo y stock validados</div></article><article class="metric"><div class="metric-label">Con revisión pendiente <span>◎</span></div><div class="metric-main" id="statPending">0</div><div class="metric-note">Conciliación o captura manual</div></article><article class="metric accent"><div class="metric-label">Artículos para solicitar <span>↗</span></div><div class="metric-main" id="statOrder">0</div><div class="metric-note">Con sugerencia mayor que cero</div></article></section>
 <section class="data-section" id="filesSection"><div class="section-bar"><div><h2>1. Inventario inicial y motores</h2><p id="sourceDate">Paso 1: inventario inicial. Paso 2: los tres motores Excel.</p></div><button class="text-btn" id="toggleFiles">Ocultar fuentes <span>⌃</span></button></div><div class="sources" id="sources">
 <div class="source-stage">PASO 1 · INVENTARIO / STOCK INICIAL</div>
-<label class="source-card extra-source" data-step="inventory"><div class="source-top"><span class="source-number">INV</span><span class="source-status" id="statusInv">Sin cargar</span></div><strong>Inventario / Stock inicial</strong><small>PDF, Excel o CSV con SAP y cantidades en piezas</small><span class="source-link">Seleccionar archivo ↥</span><input accept=".pdf,.xlsx,.xlsm,.csv" hidden id="invInput" type="file"/><span class="lock-hint hidden" id="inventoryLockHint"></span></label>
+<label class="source-card extra-source" data-step="inventory"><div class="source-top"><span class="source-number">INV</span><span class="source-status" id="statusInv">Sin cargar</span></div><strong>Inventario / Stock inicial</strong><small>PDF #GAS, PDF de inventario, Excel consolidado y Excel .xls de SAP</small><span class="source-link">Seleccionar archivo ↥</span><input accept=".pdf,.xlsx,.xlsm,.xls,.csv" hidden id="invInput" type="file"/><span class="lock-hint hidden" id="inventoryLockHint"></span></label>
 <div class="source-stage">PASO 2 · LOS TRES MOTORES DE EXCEL</div>
 <label class="source-card" data-step="motor"><div class="source-top"><span class="source-number">01</span><span class="source-status" id="status01">Sin cargar</span></div><strong>Auditoría de transacciones</strong><small id="summary01">Transacciones y venta diaria</small><span class="source-link">Seleccionar Excel .xlsm / .xlsx ↥</span><input accept=".xlsm,.xlsx" hidden id="motor01Input" type="file"/></label>
 <label class="source-card" data-step="motor"><div class="source-top"><span class="source-number">02</span><span class="source-status" id="status02">Sin cargar</span></div><strong>Uso y stock</strong><small id="summary02">Consumo ideal por artículo</small><span class="source-link">Seleccionar Excel .xlsm / .xlsx ↥</span><input accept=".xlsm,.xlsx" hidden id="motor02Input" type="file"/></label>
@@ -200,8 +201,8 @@
 <section class="view hidden" id="view-niveles"><div class="section-bar"><div><h2>Máximos y mínimos</h2><p>Mínimo = un día de seguridad; máximo = cobertura hasta la siguiente entrega + seguridad. Ambos calculados para la fecha de recepción.</p></div></div><div class="filters"><div class="search-wrap"><span>⌕</span><input id="levelSearch" placeholder="Buscar artículo o SAP…" type="search"/></div><select id="levelFilter"><option value="">Todas las familias</option></select></div><div class="table-scroll"><table class="data-table"><thead><tr><th>ARTÍCULO · SAP</th><th class="num">USO/DÍA</th><th class="num">MÍNIMO</th><th class="num">MÁXIMO</th><th class="num">STOCK</th><th class="num">DÍAS</th><th>REVISIÓN</th><th></th></tr></thead><tbody id="levelsBody"></tbody></table></div></section>
 <section class="view hidden" id="view-tendencia"><div class="section-bar"><div><h2>Evolución del consumo</h2><p>Uso ideal diario del Motor 02. La tendencia de ventas aparece como contexto, no como consumo de inventario.</p></div></div><div class="trend-panel"><div class="trend-select"><label>Artículo a analizar</label><select id="trendItemSelect"></select></div><div class="trend-metrics"><div><span>Promedio 7 días</span><strong id="trendRecent">—</strong></div><div><span>Promedio anterior</span><strong id="trendPrevious">—</strong></div><div><span>Variación</span><strong id="trendChange">—</strong></div><div><span>Días con registros</span><strong id="trendDays">—</strong></div></div><div class="chart-area" id="chartArea"><div class="empty-chart">Selecciona un artículo con historial de uso.</div></div><div class="trend-notes" id="trendNotes"></div></div><div class="section-bar chart-section"><div><h2>Contexto de operación</h2><p>Transacciones y actividad del Motor 01, más referencias de venta del Motor 03.</p></div></div><div class="context-grid"><div class="context-box"><span>Transacciones · último día disponible</span><strong id="lastTransactions">—</strong><small id="lastTransactionsDay"></small></div><div class="context-box"><span>Venta neta · último día disponible</span><strong id="lastSales">—</strong><small>Motor 01 · fuente de contexto</small></div><div class="context-box"><span>Renglones de productos · Motor 03</span><strong id="posLines">—</strong><small>Registros consolidados por producto y día</small></div></div></section>
 <section class="view hidden" id="view-conciliacion"><div class="section-bar"><div><h2>Conciliación de catálogos</h2><p>SAP del inventario ≠ IDArticulo del Motor 02. Confirma enlaces antes de hacer un pedido definitivo.</p></div><button class="btn ghost" id="bulkConfirm">✓ Confirmar coincidencias seguras</button></div><div class="notice">Se pueden consultar sugerencias por similitud de nombre, pero **no se equiparan códigos diferentes**. Las unidades de uso que no se puedan convertir requieren captura manual.</div><div class="table-scroll"><table class="data-table"><thead><tr><th>INVENTARIO SAP</th><th>SUGERENCIA DE USO</th><th class="num">CONFIANZA</th><th>ESTADO</th><th>ACCIÓN</th></tr></thead><tbody id="reconcileBody"></tbody></table></div></section>
-<section class="settings-wrap reset-zone" id="resetZone"><div class="section-bar compact"><div><h2>Administración de datos</h2><p>Las acciones eliminan únicamente el conjunto seleccionado, previa confirmación. Descarga antes un respaldo privado si lo necesitas.</p></div></div><div class="reset-actions"><button class="btn ghost" id="clearMotors">Borrar motores 01 / 02 / 03</button><button class="btn ghost" id="clearInventory">Borrar todos los artículos de inventario</button><button class="btn ghost" id="clearTransit">Borrar todo el stock en tránsito</button><button class="btn ghost" id="clearReceived">Borrar entradas ya recibidas</button><button class="btn ghost" id="clearUses">Borrar todos los usos por día (motor y manual)</button><button class="btn danger" id="resetAllBtn">↺ Reiniciar todo</button></div></section>
-<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial. <span class="version-mark">v6.0.0</span></footer>
+<section class="settings-wrap reset-zone" id="resetZone"><div class="section-bar compact"><div><h2>Administración de datos</h2><p>Las acciones eliminan únicamente el conjunto seleccionado, previa confirmación. Descarga antes un respaldo privado si lo necesitas.</p></div></div><div class="reset-actions"><button class="btn ghost" id="clearMotors">Borrar motores 01 / 02 / 03</button><button class="btn ghost" id="clearInventory">Borrar todos los artículos de inventario</button><button class="btn ghost" id="clearTransit">Borrar todo el stock en tránsito</button><button class="btn ghost" id="clearReceived">Borrar entradas ya recibidas</button><button class="btn ghost" id="clearUses">Borrar todos los usos por día (motor, alterno y manual)</button><button class="btn ghost" id="clearSupplement">Borrar solo uso alterno Excel</button><button class="btn danger" id="resetAllBtn">↺ Reiniciar todo</button></div></section>
+<footer class="footer">Pedidos WOE · Planificación local · Revisa cantidades y múltiplos antes de realizar el pedido en el sistema oficial. <span class="version-mark">v8.0.0</span></footer>
 </div>
 </main>
 </div>
@@ -285,6 +286,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const round=(qty,unit)=>['PZA','UND','ST'].includes(unit)?Math.ceil(qty-1e-9):Math.ceil(qty*1000-1e-9)/1000;
   function selectedUnit(item,override){return ['PZA','UND','KG','L'].includes(override?.unit)?override.unit:'PZA';}
   function stockFromPdf(item,override){
+    if(item.stockUnavailable&&!(override&&override.stock!==undefined&&override.stock!==null&&override.stock!==''))return null;
     if(override&&override.stock!==undefined&&override.stock!==null&&override.stock!=='')return Math.max(0,num(override.stock,0));
     const target=selectedUnit(item,override),source=String(item.unit||'PZA').toUpperCase();
     const pieces=num(item.pieces,0),bulk=num(item.bulk,0);
@@ -434,7 +436,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const manualInbound=Math.max(0,num(o.inbound,0));
     const context={...state.data,_recentWeight:cfg.recentWeight};
     const series=getSeries(workingItem,linkId,o,context,usageIndex);
-    const baseDaily=manual?Math.max(0,num(o.manual,0)):(series.valid?Math.max(0,series.forecast):null);
+    // Precedencia: captura manual > Motor 02 con promedio positivo > Excel alterno > Motor 02 cero/vacío.
+    // El Excel alterno contiene cantidades por pieza y se relaciona exclusivamente por código SAP.
+    const motorDaily=series.valid?Math.max(0,series.forecast):null;
+    const alt=state.data.supplementaryUsage?.bySap?.[String(item.sap)]||null;
+    const altAvailable=num(alt?.promedio,0)>0;
+    const useSupplement=!manual&&!(motorDaily>0)&&altAvailable;
+    const altFactor=['PZA','UND'].includes(unit)?1:(useSupplement?unitFactor(unit,'PZA',item.name):null);
+    const alternateDaily=useSupplement&&altFactor>0?Math.max(0,num(alt.promedio,0))*altFactor:null;
+    const baseDaily=manual?Math.max(0,num(o.manual,0)):(useSupplement?alternateDaily:motorDaily);
     const adjustment=Math.max(-100,Math.min(300,num(cfg.demandAdjustment,0)));
     const daily=baseDaily===null?null:Math.max(0,baseDaily*(1+adjustment/100));
     const stats=weekdayStats(state.data.motor01?.sales||[]);
@@ -462,11 +472,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const inbound=transit.qtyActive+manualInbound+receivedBefore;
     const reasons=[];
     if(stock===null)reasons.push('Validar stock en '+unit+'; inventario mixto sin conversión confirmada');
+    if(item.stockUnavailable&&(o.stock===undefined||o.stock===null||o.stock===''))reasons.push('La presentación original no permite traducir el stock a piezas sin una equivalencia manual: '+String(item.sourceStockValue??''));
+    if(item.stockNeedsReview&&!o.stockVerified)reasons.push('Confirmar stock convertido desde el archivo original: '+String(item.sourceStockValue??'')+' '+String(item.sourceStockUnit||''));
     if(['KG','L'].includes(item.unit)&&!o.stockVerified)reasons.push('Validar conversión del stock original a '+unit);
     if(['KG','L'].includes(unit)&&item.unit!==unit&&!o.stockVerified)reasons.push('Validar cambio a '+unit);
-    if(daily===null)reasons.push(series.reason||'Capturar consumo diario');
-    if(!manual&&linkId&&!o.confirmed)reasons.push('Confirmar artículo del Motor 02');
-    if(!manual&&series.valid&&series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
+    if(daily===null)reasons.push(useSupplement?'Validar conversión del promedio del Excel alterno (PZA/día) a '+unit:(series.reason||'Capturar consumo diario'));
+    if(!manual&&!useSupplement&&linkId&&!o.confirmed)reasons.push('Confirmar artículo del Motor 02');
+    if(!manual&&!useSupplement&&series.valid&&series.daysObserved<3)reasons.push('Historial insuficiente: requiere validación');
     if(transit.pending.length)reasons.push(...transit.pending);
     if(receivedPending.length)reasons.push(...receivedPending);
     const elapsed=snapshot&&receipt?daysBetween(snapshot,receipt):NaN;
@@ -511,15 +523,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       order=Math.round(order*1e6)/1e6;
     }
     const ready=reasons.length===0,status=!ready?'pendiente':order>0?'pedido':'listo';
-    const source=manual?'manual':(linkId&&series.valid?'motor':'sin-historial');
+    const source=manual?'manual':useSupplement?'excel-alterno':(linkId&&series.valid?'motor':'sin-historial');
     const reviewSignature=[supplier,unit,stock,baseDaily,adjustment,daily,weekdayAdjusted,JSON.stringify(stats.bins.map(x=>x.factor.toFixed(6))),
-      manualInbound,transit.qtyBefore,transit.qtyLater,JSON.stringify(transit.docDates),
+      manualInbound,source,useSupplement?state.data.supplementaryUsage?.file:'',transit.qtyBefore,transit.qtyLater,JSON.stringify(transit.docDates),
       JSON.stringify(received),receipt,next,safety,multiple,order].join('|');
     const reviewed=!!(o.reviewed&&o.reviewSignature===reviewSignature);
     return {item,supplier,unit,override:o,linkId,baseDaily,adjustment,daily,stock,inbound,manualInbound,transit,
       receivedPieces,receivedActivePieces,receivedPending,position,min,max,coverage,order,status,source,ready,reasons,series,multiple,manual,receipt,next,elapsed,elapsedNow,
       coverageDays,required,risk:riskBefore||position!==null&&position<0,riskBefore,reviewSignature,reviewed,
-      weekdayAdjusted,weekdayStats:stats,consumptionBefore,periodDemand,safetyUse,orderDate:now};
+      weekdayAdjusted,weekdayStats:stats,consumptionBefore,periodDemand,safetyUse,orderDate:now,useSupplement,alternateDaily,alt};
   }
 
   root.WOECore={DEFAULTS,SUPPLIERS,supplierForSap,n,num,norm,dayFromExcel,addDays,daysBetween,weekday,deliveryDates,nextDelivery,format,selectedUnit,stockFromPdf,unitFactor,indexUsage,getSeries,derive,round,transitFor,weekdayStats,orderDay,localToday};
@@ -565,9 +577,66 @@ async function extractPdfStreams(bytes){
   }
   return streams;
 }
+function inferGasPack(name,unit){
+  const s=String(name||'').toUpperCase(),u=unit.toUpperCase();
+  const matches=[...s.matchAll(/(\d+(?:[.,]\d+)?)\s*(KG|GRS?|G|LBS?|LB|ML|LTS?|LT|L)\b/g)];
+  for(const m of matches.reverse()){
+    const num=Number(m[1].replace(',','.')),k=m[2];if(!(num>0))continue;
+    const kg=k==='KG'?num:['GR','GRS','G'].includes(k)?num/1000:['LB','LBS'].includes(k)?num*0.45359237:null;
+    const l=['LT','LTS','L'].includes(k)?num:k==='ML'?num/1000:null;
+    if(u==='KG'&&kg)return kg;if(u==='L'&&l)return l;
+  }
+  return null;
+}
+function gasTotal(raw,name){
+ const text=String(raw||'').trim();if(text==='0')return {pieces:0,sourceUnit:'PZA',review:false};
+ const chunks=text.split(/\s*\+\s*/),re=/^([\d.,]+)\s*(piezas?|pzas?|bolsas?|botes?|botellas?|latas?|blisters?|blíster(?:es)?|sobres?|paquetes?|pqt|rebanadas?|rollos?|kg|kilos?|litros?|lts?|lt|l|cajas?)$/i;
+ // Nunca sumar rebanadas con KG: una rebanada no equivale a un paquete o un kilogramo.
+ if(/rebanadas?/i.test(text)&&/(?:\d+\s*KG|\d+\s*LITROS?)/i.test(text))return {pieces:null,sourceUnit:'MIXTO',review:true};
+ let total=0,review=false,sourceUnits=new Set();
+ for(const part of chunks){const m=part.trim().match(re);if(!m)return {pieces:null,sourceUnit:'MIXTO',review:true};
+  const value=Number(m[1].replace(/,/g,''));if(!Number.isFinite(value)||value<0)return {pieces:null,sourceUnit:'MIXTO',review:true};
+  const unit=m[2].toLowerCase();sourceUnits.add(unit);
+  if(/^cajas?/.test(unit)){
+    const pack=String(name||'').match(/\b(?:CJ|CJA)\s*(\d+)\s*(?:PZ|B|BOT|BTE|BLIST|UND|SOB|REB)/i)||String(name||'').match(/\bC(\d+)[BP]\b/i);
+    if(!pack)return {pieces:null,sourceUnit:'CAJA',review:true};total+=value*Number(pack[1]);review=true;
+  }else if(/^rollos?/.test(unit)){
+    const pack=String(name||'').match(/\bROL\s*(\d+)\s*PZAS?/i);
+    total+=pack?value*Number(pack[1]):value;if(pack)review=true;
+  }else if(/^(kg|kilo)/.test(unit)||/^(litro|lt|l$)/.test(unit)){
+    const kind=/^(kg|kilo)/.test(unit)?'KG':'L',size=inferGasPack(name,kind);
+    if(!size)return {pieces:null,sourceUnit:kind,review:true,rawUnitValue:value};
+    total+=value/size;review=true;
+  }else total+=value;
+ }
+ return {pieces:Math.round(total*1e6)/1e6,sourceUnit:[...sourceUnits].join(' + '),review};
+}
+function parseGasReport(pages){
+ const all=pages.flat(),text=all.map(s=>s.text).join('\n');
+ const generated=text.match(/Generado:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i),date=generated?`${generated[3]}-${generated[2].padStart(2,'0')}-${generated[1].padStart(2,'0')}`:'';
+ const expectedM=text.match(/(\d+)\s+productos\s+contados/i),expected=expectedM?Number(expectedM[1]):null;
+ const rows=[],seen=new Set();let unresolved=0;
+ for(const spans of pages){
+  for(const cell of spans){if(Math.abs(cell.x-39)>4||!/^\d{5,8}$/.test(cell.text.trim()))continue;
+   const sap=cell.text.trim(),siblings=spans.filter(s=>Math.abs(s.y-cell.y)<=2.7);
+   const at=x=>siblings.find(s=>Math.abs(s.x-x)<4)?.text?.trim()||'';
+   let name=at(101).replace(/\s*[·•]\s*Apoyo\s*$/i,'').replace(/\s*[·•]\s*Apoyo\s+WOE\s*:.*$/i,'').trim();
+   const total=at(585),parsed=gasTotal(total,name);if(!name||!total||seen.has(sap))continue;
+   seen.add(sap);
+   if(parsed.pieces===null){unresolved++;rows.push({'SAP':sap,'FAMILIA':'Sin familia','PRODUCTO DESCRIPCION':name,'PIEZAS':0,'CANT. UNID.':parsed.rawUnitValue??null,'UNIDAD':parsed.sourceUnit,'STOCK NEEDS REVIEW':true,'STOCK UNAVAILABLE':true,'SOURCE STOCK UNIT':parsed.sourceUnit,'SOURCE STOCK VALUE':total});}
+   else rows.push({'SAP':sap,'FAMILIA':'Sin familia','PRODUCTO DESCRIPCION':name,'PIEZAS':parsed.pieces,'CANT. UNID.':null,'UNIDAD':'PZA','STOCK NEEDS REVIEW':parsed.review,'SOURCE STOCK UNIT':parsed.sourceUnit,'SOURCE STOCK VALUE':total});
+  }
+ }
+ if(!rows.length)throw Error('El PDF #GAS no contiene renglones SAP y Total actual reconocibles.');
+ if(expected!==null&&rows.length!==expected)throw Error(`El PDF #GAS contiene ${expected} artículos, pero se leyeron ${rows.length}. No se importó el conteo incompleto.`);
+ return {rows,date,expected,format:'pdf-gas',unresolved};
+}
 async function parse(file){
   const streams=await extractPdfStreams(new Uint8Array(await file.arrayBuffer()));
   if(!streams.length)throw Error('No se encontró texto de inventario dentro del PDF. Los PDF escaneados requieren Excel o un PDF con texto seleccionable.');
+  if(streams.some(content=>content.includes('CONTEO APP'))){
+    const pages=await readSpans(file);return parseGasReport(pages);
+  }
   const rows=[],seen=new Set(),pageText=[];
   for(const content of streams){
     const spans=[];const re=/BT\s*([\s\S]*?)\s+ET\b/g;let match;
@@ -609,6 +678,124 @@ async function readSpans(file){
   });
 }
 root.WOEPdfInventory={parse,readSpans};
+})(typeof window!=='undefined'?window:globalThis);
+
+</script>
+<script>
+/* Lector local de Excel 97–2003 (.xls, BIFF8/OLE2).
+   Limitado deliberadamente a celdas de datos: no ejecuta macros ni fórmulas.
+   Protege encabezados y decodifica SST, NUMBER, RK y MULRK. */
+(function(root){'use strict';
+ const txt=new TextDecoder('windows-1252');
+ function readOle(input){
+  const a=new Uint8Array(input),v=new DataView(a.buffer,a.byteOffset,a.byteLength);
+  const u16=(p)=>v.getUint16(p,true),u32=(p)=>v.getUint32(p,true);
+  if(a.slice(0,8).join(',')!=='208,207,17,224,161,177,26,225')throw Error('El archivo no es Excel .xls clásico válido.');
+  const ss=1<<u16(30),fatCnt=u32(44),sector=i=>a.subarray((i+1)*ss,(i+2)*ss);
+  if(ss!==512&&ss!==4096)throw Error('El formato OLE no está admitido.');
+  const fatSectors=[];for(let i=0;i<109&&fatSectors.length<fatCnt;i++){const id=u32(76+i*4);if(id<0xfffffffa)fatSectors.push(id);}
+  let dif=u32(68);for(let j=0;j<u32(72)&&dif<0xfffffffa&&fatSectors.length<fatCnt;j++){
+    const dv=new DataView(sector(dif).buffer,sector(dif).byteOffset,ss);
+    for(let k=0;k<(ss/4)-1&&fatSectors.length<fatCnt;k++){const id=dv.getUint32(k*4,true);if(id<0xfffffffa)fatSectors.push(id);}
+    dif=dv.getUint32(ss-4,true);
+  }
+  const fat=[];for(const id of fatSectors){const s=sector(id),vv=new DataView(s.buffer,s.byteOffset,s.length);for(let j=0;j<s.length;j+=4)fat.push(vv.getUint32(j,true));}
+  function chain(id,limit=5e7){const blocks=[],seen=new Set();let size=0;
+    while(id<0xfffffffa&&!seen.has(id)&&id<fat.length&&size<limit){seen.add(id);const s=sector(id);blocks.push(s);size+=s.length;id=fat[id];}
+    const out=new Uint8Array(size);let p=0;for(const s of blocks){out.set(s,p);p+=s.length;}return out;}
+  const dir=chain(u32(48));const d=new DataView(dir.buffer,dir.byteOffset,dir.byteLength);
+  for(let p=0;p+128<=dir.length;p+=128){const len=d.getUint16(p+64,true),type=dir[p+66];if(type!==2||len<2||len>64)continue;
+    let name='';for(let k=0;k<len-2;k+=2)name+=String.fromCharCode(d.getUint16(p+k,true));
+    if(name!=='Workbook'&&name!=='Book')continue;
+    const length=d.getUint32(p+120,true);if(length<4096)throw Error('Libro .xls demasiado pequeño para su estructura de datos.');
+    return chain(d.getUint32(p+116,true),length+ss).slice(0,length);
+  }
+  throw Error('No se encontró el libro de trabajo dentro del archivo .xls.');
+ }
+ function parseBIFF(a){
+  const v=new DataView(a.buffer,a.byteOffset,a.byteLength),rec=[],u16=(p)=>v.getUint16(p,true),u32=(p)=>v.getUint32(p,true);
+  for(let p=0;p+4<=a.length;){const id=u16(p),len=u16(p+2),at=p+4;if(at+len>a.length)break;rec.push({id,at,len});p=at+len;}
+  const ix=rec.findIndex(x=>x.id===0xfc);if(ix<0)throw Error('El .xls no contiene una tabla de textos reconocible.');
+  const chunks=[a.subarray(rec[ix].at,rec[ix].at+rec[ix].len)];for(let i=ix+1;i<rec.length&&rec[i].id===0x3c;i++)chunks.push(a.subarray(rec[i].at,rec[i].at+rec[i].len));
+  class Reader{
+   constructor(){this.i=0;this.p=0;}
+   bytes(n){const out=new Uint8Array(n);let pos=0;while(pos<n){if(this.p>=chunks[this.i].length){this.i++;this.p=0;if(this.i>=chunks.length)throw Error('SST truncada');}
+     const step=Math.min(n-pos,chunks[this.i].length-this.p);out.set(chunks[this.i].subarray(this.p,this.p+step),pos);pos+=step;this.p+=step;}return out;}
+   int16(){const x=this.bytes(2);return x[0]+x[1]*256;}
+   int32(){const x=this.bytes(4);return (x[0]+x[1]*256+x[2]*65536+x[3]*16777216)>>>0;}
+   str(){let remain=this.int16(),flag=this.bytes(1)[0];const runs=flag&8?this.int16():0,extend=flag&4?this.int32():0;let utf16=!!(flag&1),out='';
+    while(remain){if(this.p===chunks[this.i].length){this.i++;this.p=0;utf16=!!(this.bytes(1)[0]&1);}
+     if(this.i>=chunks.length)throw Error('Cadena SST incompleta');const width=utf16?2:1,avail=Math.floor((chunks[this.i].length-this.p)/width),take=Math.min(remain,avail);
+     if(!take)throw Error('Error en el límite de cadenas del Excel');let raw=this.bytes(take*width);
+     out+=utf16?new TextDecoder('utf-16le').decode(raw):txt.decode(raw);remain-=take;
+    }
+    if(runs)this.bytes(runs*4);if(extend)this.bytes(extend);return out;
+   }
+  }
+  const reader=new Reader(),all=reader.int32(),unique=reader.int32(),strings=[];
+  if(unique>150000)throw Error('Demasiadas cadenas en el .xls.');for(let i=0;i<unique;i++)strings.push(reader.str());
+  const sheets=[];for(const r of rec){if(r.id!==0x85||r.len<8)continue;
+   const nameLen=a[r.at+6],flags=a[r.at+7],raw=a.subarray(r.at+8,r.at+8+nameLen*(flags&1?2:1));
+   sheets.push({offset:u32(r.at),name:flags&1?new TextDecoder('utf-16le').decode(raw):txt.decode(raw)});
+  }
+  function rk(n){let value;
+   if(n&2)value=n>>2;
+   else{const b=new ArrayBuffer(8),vv=new DataView(b);vv.setUint32(4,n&0xfffffffc,true);value=vv.getFloat64(0,true);}
+   return n&1?value/100:value;
+  }
+  function readSheet(s){const rows=new Map();const put=(r,c,val)=>{if(!rows.has(r))rows.set(r,new Map());rows.get(r).set(c,val);};
+   for(let p=s.offset;p+4<=a.length;){const id=u16(p),len=u16(p+2),at=p+4;if(at+len>a.length)break;p=at+len;
+    if(id===0x0a)break;
+    if(len<6)continue;
+    const row=u16(at),col=u16(at+2);
+    if(id===0xfd&&len>=10)put(row,col,strings[u32(at+6)]||'');
+    else if(id===0x203&&len>=14)put(row,col,v.getFloat64(at+6,true));
+    else if(id===0x27e&&len>=10)put(row,col,rk(v.getInt32(at+6,true)));
+    else if(id===0xbd&&len>=12){const last=u16(at+len-2);for(let c=col;c<=last;c++){const off=at+4+(c-col)*6;if(off+6>at+len-2)break;put(row,c,rk(v.getInt32(off+2,true)));}}
+    else if(id===0x0204&&len>=8){const n=u16(at+6);put(row,col,txt.decode(a.subarray(at+8,at+8+n)));}
+    else if(id===0x6&&len>=14){const num=v.getFloat64(at+6,true);if(Number.isFinite(num))put(row,col,num);}
+   }
+   return [...rows].sort((a,b)=>a[0]-b[0]).map(([number,cells])=>({number,cells}));
+  }
+  return {sheets,readSheet};
+ }
+ function toDate(raw){const s=String(raw??'').trim();let m=s.match(/^(\d{1,2})[-\/]([01]?\d)[-\/](20\d{2})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+   m=s.match(/^(20\d{2})(\d{2})(\d{2})$/);return m?`${m[1]}-${m[2]}-${m[3]}`:'';}
+ function sizeUnit(name,unit){const up=String(name||'').toUpperCase(),u=String(unit||'').toUpperCase();
+   const matches=[...up.matchAll(/(\d+(?:[.,]\d+)?)\s*(KG|GRS?|G|LBS?|LB|ML|LTS?|LT|L)\b/g)];
+   // No utilizar volumen/peso de la caja ni códigos al principio de la descripción.
+   for(const m of matches.reverse()){
+    const n=Number(m[1].replace(',','.')),kind=m[2];if(!(n>0))continue;
+    const kg=kind==='KG'?n:['G','GR','GRS'].includes(kind)?n/1000:['LB','LBS'].includes(kind)?n*0.45359237:null;
+    const l=['L','LT','LTS'].includes(kind)?n:kind==='ML'?n/1000:null;
+    if(u==='KG'&&kg)return kg;if(u==='L'&&l)return l;
+   }return null;
+ }
+ async function parse(file){const a=readOle(await file.arrayBuffer()),wb=parseBIFF(a),sheet=wb.sheets.find(s=>/^(datos)$/i.test(s.name))||wb.sheets[0];if(!sheet)throw Error('No hay hojas para leer en este .xls.');
+   const lines=wb.readSheet(sheet),head=lines.find(x=>[...x.cells.values()].some(z=>/Cod\. Producto/i.test(String(z)))&&[...x.cells.values()].some(z=>/Inv\. Inicial/i.test(String(z))));
+   if(!head)throw Error('No se encontraron las columnas Cod. Producto e Inv. Inicial del reporte .xls.');
+   const h=new Map([...head.cells].map(([col,val])=>[String(val).trim().toUpperCase(),col]));
+   const col=(...names)=>{for(const n of names){for(const [key,c] of h)if(key===n.toUpperCase())return c;}return -1;};
+   const sapCol=col('COD. PRODUCTO'),nameCol=col('PRODUCTO','PRODUCTO DESCRIPCIÓN'),unitCol=col('UD'),famCol=col('FAMILIA'),qtyCol=col('INV. INICIAL'),dateCol=col('FECHA');
+   if([sapCol,nameCol,qtyCol,dateCol].includes(-1))throw Error('Faltan columnas SAP, descripción, Inv. Inicial o Fecha en el .xls.');
+   const out=[],dates=new Set(),seen=new Set(),warnings=[];
+   for(const row of lines){if(row.number<=head.number)continue;const get=c=>row.cells.get(c);
+    const sap=String(get(sapCol)||'').trim();if(!/^\d{5,8}$/.test(sap))continue;
+    if(seen.has(sap))throw Error('El .xls contiene el SAP repetido '+sap+'; evita consolidar sin revisar almacenes.');
+    seen.add(sap);const raw=Number(get(qtyCol));if(!Number.isFinite(raw)||raw<0)continue;
+    const name=String(get(nameCol)||'').trim(),unit=String(get(unitCol)||'PZA').toUpperCase().trim(),date=toDate(get(dateCol));if(date)dates.add(date);
+    let pieces=raw,bulk=null,importUnit='PZA',review=false,sourceUnit=unit;
+    if(['KG','L'].includes(unit)){const size=sizeUnit(name,unit);
+       if(size){pieces=Math.round((raw/size)*1e6)/1e6;review=true;}
+       else{pieces=0;bulk=raw;importUnit=unit;review=true;warnings.push(sap);}
+    }
+    out.push({SAP:sap,'PRODUCTO DESCRIPCION':name,'FAMILIA':String(get(famCol)||'Sin familia'),PIEZAS:pieces,'CANT. UNID.':bulk,UNIDAD:importUnit,'STOCK NEEDS REVIEW':review,'SOURCE STOCK UNIT':sourceUnit,'SOURCE STOCK VALUE':raw});
+   }
+   if(!out.length)throw Error('No hay existencias con SAP válido en la hoja Datos.');
+   if(dates.size>1)throw Error('El .xls contiene fechas de stock diferentes; separa por fecha antes de cargar.');
+   return {rows:out,date:[...dates][0]||'',expected:out.length,format:'xls-legacy',unresolved:warnings.length};
+ }
+ root.WOELegacyXLS={parse,sizeUnit};
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
@@ -705,7 +892,7 @@ const Core=window.WOECore;
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MXN=x=>Core.format(x,2);
-const EMPTY=()=>({version:2,receivedDocs:[],storeId:'',storeName:'',inventoryGenerated:'',inventoryDate:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]},transitDocs:[]});
+const EMPTY=()=>({version:2,receivedDocs:[],storeId:'',storeName:'',inventoryGenerated:'',inventoryDate:'',inventoryFilename:'',inventory:[],motor01:{file:'',sales:[]},motor02:{file:'',asOf:'',articles:[],usage:[],usageCatalog:[]},motor03:{file:'',posCatalog:{},sales:[]},supplementaryUsage:{file:'',bySap:{},info:{}},transitDocs:[]});
 let state={data:EMPTY(),settings:{...Core.DEFAULTS},overrides:{},view:'pedido'};
 let usageIndex=new Map(), currentDetail=null, editingOptions=[], changed=false;
 let filter={search:'',family:new Set(),status:new Set()};
@@ -722,7 +909,7 @@ function scheduleSave(){changed=true;clearTimeout(scheduleSave._timer);scheduleS
 function restore(){try{const saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved?.data?.inventory&&Array.isArray(saved.data.inventory)){
     state={...state,data:saved.data,settings:{...Core.DEFAULTS,...saved.settings},overrides:saved.overrides||{}};
     state.settings.safetyDays=Math.min(5,Math.max(0,Number(state.settings.safetyDays??1)));
-    state.data.receivedDocs=state.data.receivedDocs||[];
+    state.data.receivedDocs=state.data.receivedDocs||[];state.data.supplementaryUsage=state.data.supplementaryUsage||{file:'',bySap:{},info:{}};
     state.settings.demandAdjustment=Math.max(-100,Math.min(300,Number(state.settings.demandAdjustment)||0));
     if(!['all','lacteos','alsea','sirena'].includes(state.settings.supplierFilter))state.settings.supplierFilter='all';
   }}catch(e){console.warn('Sin sesión guardada',e);}reindex();}
@@ -743,7 +930,10 @@ function sourceStatus(){
   $('statusInv').textContent=haveData()?'Cargado':'Listo para subir';$('statusInv').classList.toggle('loaded',haveData());
   $('invInput').disabled=false;document.querySelector('[data-step="inventory"]').classList.remove('locked');$('inventoryLockHint').textContent='';
   const ts=d.inventoryGenerated?d.inventoryGenerated.slice(0,10):'';
-  $('sourceDate').textContent=ts?`Inventario ${state.data.inventoryFilename||''} · Fecha del conteo: ${state.data.inventoryDate||'pendiente'}`:'Paso 1: carga el inventario inicial (SAP y piezas). Paso 2: los motores Excel.';
+  $('sourceDate').textContent=ts?`Inventario ${state.data.inventoryFilename||''} · Fecha del conteo: ${state.data.inventoryDate||'pendiente'}`:'Paso 1: carga el inventario inicial (PDF #GAS, PDF clásico, Excel XLSX o XLS). Paso 2: los motores Excel.';
+  const alt=d.supplementaryUsage||{};const altCount=Object.keys(alt.bySap||{}).length;const matching=d.inventory.filter(item=>Number(alt.bySap?.[item.sap]?.promedio)>0).length;
+  $('supplementHint').innerHTML=alt.file?`<strong>Uso alterno: ${esc(alt.file)}</strong> · ${altCount} SAP con promedio positivo · ${matching} coinciden con el inventario. Se utiliza solo si el Motor 02 tiene uso diario vacío o cero; los usos manuales tienen prioridad.`:'Uso diario alterno: sin cargar. Complementa únicamente consumos vacíos o cero del Motor 02.';
+  $('supplementHint').classList.toggle('loaded',!!alt.file);$('supplementBtn').classList.toggle('supplement-top',!!alt.file);
   $('storeTag').textContent=d.storeId?`${d.storeId} · ${d.storeName||'Tienda'}`:'Sin datos';
 }
 function populateFamilies(){
@@ -757,7 +947,7 @@ function updateMultiLabels(){
  $('familyLabel').textContent=filter.family.size?`${filter.family.size} familia(s)`:'Todas las familias';
  $('statusLabel').textContent=filter.status.size?`${filter.status.size} estado(s)`:'Todos los estados';
 }
-function filterByStatus(r,value){return value==='manual'?!r.linkId&&!r.manual:value==='pendiente'?!r.ready:value==='revisado'?r.reviewed:value==='pedido'?r.order>0:r.ready;}
+function filterByStatus(r,value){return value==='manual'?!r.linkId&&!r.manual&&!r.useSupplement:value==='pendiente'?!r.ready:value==='revisado'?r.reviewed:value==='pedido'?r.order>0:r.ready;}
 function populateTransitSelect(){
  const el=$('transitManualSap'),old=el.value;
  el.innerHTML='<option value="">Selecciona SAP...</option>'+state.data.inventory.map(x=>`<option value="${esc(x.sap)}">${esc(x.sap)} · ${esc(x.name)}</option>`).join('');
@@ -840,7 +1030,7 @@ async function importReceived(file){const date=$('receivedBatchDate').value,toda
  else if(low.endsWith('.csv')){const data=parseCsv(await file.text());const head=(data.shift()||[]).map(String);rows=parseReceivedRows(data.map(v=>Object.fromEntries(head.map((h,i)=>[h,v[i]??'']))));}
  else if(low.endsWith('.xlsm')||low.endsWith('.xlsx')){const book=await openWorkbook(file);
    for(const name of [...book.sheets.keys()].slice(0,10)){let data=[];await sheetRows(book,[name],row=>data.push(row),{detectInventory:true});const candidate=parseReceivedRows(data);if(candidate.length){rows=candidate;break;}}
- }else throw Error('Archivo no compatible: utiliza PDF, XLSX, XLSM o CSV.');
+ }else throw Error('Archivo no compatible: utiliza PDF, XLS, XLSX, XLSM o CSV.');
  if(!rows.length)throw Error('No se reconocieron renglones SAP con cantidades en piezas.');
  const inv=new Set(state.data.inventory.map(x=>String(x.sap)));const known=rows.filter(x=>inv.has(String(x.sap)));
  if(!known.length)throw Error('Ningún SAP del documento existe en el inventario cargado.');
@@ -887,6 +1077,7 @@ function itemLabel(r){return `<strong class="product-name">${esc(r.item.name)}</
 function stockText(r){return r.stock===null?'<span class="cell-muted">Revisar</span>':`${Core.format(r.stock,3)} <small class="cell-muted">${esc(r.unit)}</small>`;}
 function sourceTag(r){
   if(r.manual)return '<span class="usage-tag manual">Manual</span>';
+  if(r.useSupplement)return '<span class="usage-tag alt" title="Promedio cargado por SAP desde Excel alterno; se usa solo cuando Motor 02 está vacío o en cero">Excel alterno</span>';
   if(r.linkId&&r.series.valid&&r.override.confirmed)return '<span class="usage-tag">Motor 02</span>';
   if(r.linkId&&r.series.valid)return '<span class="usage-tag suggested">Sugerido</span>';
   return '<span class="usage-tag manual">Por capturar</span>';
@@ -993,7 +1184,7 @@ function updateUnitHints(){
  $('editInboundUnit').textContent=`Adicional a PDFs, en ${unit}`;
  $('pieceConversionHint').textContent=`${unit} por cada PZA del tránsito PDF; ${['PZA','UND'].includes(unit)?'normalmente 1':'captura equivalencia validada'}`;
  $('conversionHint').textContent=`${unit} por unidad usada por el motor`;
- $('stockVerifiedWrap').classList.toggle('hidden',!['KG','L'].includes(item.unit)&&!['KG','L'].includes(unit));
+ $('stockVerifiedWrap').classList.toggle('hidden',!item.stockNeedsReview&&!['KG','L'].includes(item.unit)&&!['KG','L'].includes(unit));
  $('multipleHint').textContent=item.packHint>1?`Descripción sugiere caja de ${item.packHint}; valida el múltiplo en ${unit}`:`Cantidad en ${unit} que puedes pedir por paquete`;
 }
 function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=id;o.unit=$('editUnit').value;
@@ -1007,7 +1198,7 @@ function readDetailForm(){const o={};const id=$('editUsageId').value;o.usageId=i
 }
 function updateDetailMath(){if(!currentDetail)return;const item=detailItem();const temp={...state,overrides:{...state.overrides,[currentDetail]:readDetailForm()}};
   const r=Core.derive(item,temp,usageIndex);
-  $('detailMath').innerHTML=`<strong>Previsualización actualizada</strong><div>Uso diario base: ${r.baseDaily===null?'Pendiente':Core.format(r.baseDaily,3)+' '+esc(r.unit)} · Ajuste global: ${r.adjustment>0?'+':''}${r.adjustment}%</div><div>Uso ajustado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(r.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} ${esc(r.unit)} · Necesario: ${Core.format(r.required,3)} ${esc(r.unit)}</div><div>Tránsito considerado: ${Core.format(r.transit.beforePieces,3)} PZA hasta recepción + ${Core.format(r.transit.laterPieces,3)} PZA durante cobertura · ${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</div><div>El pedido considera ${Math.max(0,state.settings.safetyDays)} día(s) de seguridad; nunca utiliza un tránsito posterior antes de su fecha prevista.</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'No calculable':Core.format(r.order,3)+' '+esc(r.unit)}</strong> ${r.ready?'✓ Validado':' · Propuesta sujeta a validación'}</div>`;
+  $('detailMath').innerHTML=`<strong>Previsualización actualizada</strong><div>Origen del uso: ${r.manual?'Captura manual':r.useSupplement?'Excel alterno por SAP':r.source==='motor'?'Motor 02':'Pendiente'}</div><div>Uso diario base: ${r.baseDaily===null?'Pendiente':Core.format(r.baseDaily,3)+' '+esc(r.unit)} · Ajuste global: ${r.adjustment>0?'+':''}${r.adjustment}%</div><div>Uso ajustado: <strong>${r.daily===null?'Pendiente':Core.format(r.daily,3)+' '+esc(r.unit)+'/día'}</strong></div><div>Entrega: ${longDate(r.receipt)} · Siguiente: ${longDate(r.next)}</div><div>Stock proyectado al recibir: ${Core.format(r.position,3)} ${esc(r.unit)} · Necesario: ${Core.format(r.required,3)} ${esc(r.unit)}</div><div>Tránsito considerado: ${Core.format(r.transit.beforePieces,3)} PZA hasta recepción + ${Core.format(r.transit.laterPieces,3)} PZA durante cobertura · ${Core.format(r.manualInbound,3)} ${esc(r.unit)} manual</div><div>El pedido considera ${Math.max(0,state.settings.safetyDays)} día(s) de seguridad; nunca utiliza un tránsito posterior antes de su fecha prevista.</div><div>Mínimo: ${Core.format(r.min,3)} · Máximo: ${Core.format(r.max,3)} · Stock del conteo: ${Core.format(r.stock,3)}</div><div>Pedido: <strong>${r.order===null?'No calculable':Core.format(r.order,3)+' '+esc(r.unit)}</strong> ${r.ready?'✓ Validado':' · Propuesta sujeta a validación'}</div>`;
   $('detailWarnings').textContent=r.reasons.length?r.reasons.join(' · '):'El artículo tiene los datos necesarios para calcular el pedido.';
 }
 function closeDetail(){$('detailOverlay').classList.add('hidden');currentDetail=null;}
@@ -1063,6 +1254,45 @@ async function sheetRows(wb,preferred,handler,opts={}){let name=preferred.find(n
   const filepath=wb.sheets.get(name);const zipFile=wb.zip.file(filepath);
   if(!zipFile)throw Error('No se pudo abrir la hoja '+name+' ('+filepath+').');
   const xml=await zipFile.async('string');let count=eachRow(xml,wb.strings,handler,opts);return {name,count:Math.max(0,count-1)};
+}
+// Libro de respaldo: DIA | SAP | Producto | Promedio. No necesita Motor 02 para subirse.
+// No se suman filas repetidas: el promedio es una tasa, no un conteo.
+async function uploadSupplement(file){
+  if(!/\.xlsx?m?$/i.test(file.name)||/\.xls$/i.test(file.name))throw Error('Selecciona un Excel .xlsx o .xlsm para el consumo promedio alterno.');
+  const wb=await openWorkbook(file),temp=new Map(),conflicted=new Set();
+  let total=0,emptySap=0,zeros=0,duplicates=0,invalid=0;
+  for(const name of wb.sheets.keys()){
+    let headerFound=false;
+    await sheetRows(wb,[name],r=>{
+      if(!headerFound){const keys=Object.keys(r).map(Core.norm);headerFound=keys.includes('SAP')&&keys.includes('PROMEDIO');if(!headerFound)return;}
+      const keyed=Object.fromEntries(Object.entries(r).map(([k,v])=>[Core.norm(k),v]));
+      const raw=keyed.SAP;const sap=String(raw??'').trim().replace(/\.0+$/,'');
+      if(!sap){emptySap++;return;}
+      if(!/^\d{5,8}$/.test(sap)){invalid++;return;}
+      total++;
+      const rawMean=keyed.PROMEDIO;
+      if(rawMean===null||rawMean===undefined||String(rawMean).trim()===''){zeros++;return;}
+      let mean=typeof rawMean==='number'?rawMean:Number(String(rawMean).trim().replace(',','.'));
+      if(!Number.isFinite(mean)||mean<0){invalid++;return;}
+      if(mean===0){zeros++;return;}
+      if(conflicted.has(sap))return;
+      const row={sap,promedio:Math.round(mean*1e8)/1e8,producto:String(keyed.PRODUCTO||'').trim()};
+      const prev=temp.get(sap);
+      if(prev){duplicates++;
+        if(Math.abs(prev.promedio-row.promedio)>1e-8){temp.delete(sap);conflicted.add(sap);}
+        return;
+      }
+      temp.set(sap,row);
+    });
+    // El archivo de referencia tiene una sola hoja; se selecciona la primera con columnas correctas.
+    if(headerFound)break;
+  }
+  if(!total)throw Error('No se localizaron columnas SAP y Promedio con registros válidos. No se modificaron tus datos.');
+  if(!temp.size)throw Error('El archivo no tiene promedios positivos por SAP. No se modificaron tus datos.');
+  state.data.supplementaryUsage={file:file.name,bySap:Object.fromEntries(temp),info:{total,emptySap,zeros,duplicates,invalid,conflicts:[...conflicted]}};
+  scheduleSave();render();
+  const matched=state.data.inventory.filter(item=>temp.has(String(item.sap))).length;
+  toast(`Uso alterno cargado: ${temp.size} SAP positivos · ${matched} del inventario · ${zeros} en cero/vacíos omitidos${conflicted.size?' · '+conflicted.size+' duplicados contradictorios excluidos':''}.`);
 }
 function storeGuard(rawStore,fileName){const target=state.data.storeId;if(target&&rawStore&&String(Number(rawStore))!==String(Number(target)))throw Error(`${fileName} corresponde a la tienda ${rawStore}, no a ${target}. No se mezclaron los datos.`);}
 async function uploadMotor(n,file){let out;
@@ -1156,7 +1386,7 @@ function normalizeInventoryRows(rows){if(!rows.length)throw Error('Archivo de in
     const pieces=qty(mapped.PIEZAS??mapped['CANTIDAD PIEZAS']??mapped['STOCK INICIAL']??mapped['STOCK ACTUAL']??mapped.EXISTENCIA??mapped.EXISTENCIAS??mapped['CANTIDAD CONTADA']??mapped['INVENTARIO FISICO']??mapped.CANTIDAD??null);
     const bulk=qty(mapped['CANT UNID']??mapped['CANTIDAD UNID']??mapped['CANT UNIDADES']??null);
     if(pieces===null&&bulk===null)continue;
-    records.push({sap,name,unit,pieces:pieces??0,bulk,family:String(mapped.FAMILIA||'Sin familia')});
+    records.push({sap,name,unit,pieces:pieces??0,bulk,family:String(mapped.FAMILIA||'Sin familia'),stockNeedsReview:!!mapped['STOCK NEEDS REVIEW'],stockUnavailable:!!mapped['STOCK UNAVAILABLE'],sourceStockUnit:String(mapped['SOURCE STOCK UNIT']||unit),sourceStockValue:mapped['SOURCE STOCK VALUE']??null});
   }
   if(!records.length)throw Error('No se detectaron columnas SAP, producto y piezas en el inventario.');
   const original=new Map(state.data.inventory.map(i=>[i.sap,i]));let updated=0,added=0;
@@ -1165,24 +1395,47 @@ function normalizeInventoryRows(rows){if(!rows.length)throw Error('Archivo de in
     else{next.set(entry.sap,{...entry,packHint:1,suggestions:[]});added++;}
   }
   state.data.inventory=[...next.values()].sort((a,b)=>(a.family||'').localeCompare(b.family||'','es')||a.sap.localeCompare(b.sap));
-  state.overrides=Object.fromEntries(Object.entries(state.overrides).filter(([sap])=>next.has(sap)));
+  state.overrides=Object.fromEntries(Object.entries(state.overrides).filter(([sap])=>next.has(sap)).map(([sap,o])=>{const {stock,stockVerified,reviewed,reviewSignature,...rest}=o||{};return [sap,rest];}));
   rebuildSuggestions();return {updated,added,total:next.size};
 }
-async function uploadInventory(file){
-  // El inventario se carga primero; no requiere motores.
-  let rows=[],date='';const ext=file.name.toLowerCase();
-  if(ext.endsWith('.pdf')){const parsed=await window.WOEPdfInventory.parse(file);rows=parsed.rows;date=parsed.date;}
-  else if(ext.endsWith('.csv')){const matrix=parseCsv(await file.text());const h=(matrix.shift()||[]).map(String);rows=matrix.map(r=>Object.fromEntries(h.map((col,i)=>[col,r[i]??''])));}
-  else if(ext.endsWith('.xlsm')||ext.endsWith('.xlsx')){const wb=await openWorkbook(file);const sheets=[...wb.sheets.keys()];let lastError=null;
-    for(const name of sheets.slice(0,8)){let test=[];try{await sheetRows(wb,[name],r=>test.push(r),{detectInventory:true});
-      const matched=normalizeInventoryRows(test);if(matched.total){rows=null;break;}
-    }catch(e){lastError=e;}}
-    if(rows)throw lastError||Error('No se encontró tabla de inventario válida.');
-  }else throw Error('Formato de inventario no compatible; selecciona PDF, XLSX, XLSM o CSV.');
-  let info={};if(rows)info=normalizeInventoryRows(rows);
-  state.data.inventoryDate=date||Core.orderDay(state.settings);state.data.inventoryGenerated=date?date+'T00:00:00':new Date().toISOString();state.data.inventoryFilename=file.name;
-  scheduleSave();render();toast(`Inventario cargado: ${state.data.inventory.length} artículos. Confirma la fecha del conteo (${state.data.inventoryDate}).`);
+async function getXlsxInventoryDate(book, name){
+  const path=book.sheets.get(name),entry=book.zip.file(path);if(!entry)return '';
+  const xml=(await entry.async('string')).slice(0,15000);
+  const plain=decodeXml(xml.replace(/<[^>]*>/g,' '));
+  const m=plain.match(/Generado:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+  return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';
 }
+async function uploadInventory(file){
+  // Inventarios son fotos completas del stock: cada nueva carga SUSTITUYE el anterior.
+  // Nunca se suman dos archivos completos ni se conserva un stock editado del anterior.
+  let rows=null,date='',info={},format='';const ext=file.name.toLowerCase();
+  if(ext.endsWith('.pdf')){const parsed=await window.WOEPdfInventory.parse(file);rows=parsed.rows;date=parsed.date;format=parsed.format||'pdf-clasico';}
+  else if(ext.endsWith('.xls')){const parsed=await window.WOELegacyXLS.parse(file);rows=parsed.rows;date=parsed.date;format='xls-legacy';}
+  else if(ext.endsWith('.csv')){const matrix=parseCsv(await file.text());const h=(matrix.shift()||[]).map(String);rows=matrix.map(r=>Object.fromEntries(h.map((col,i)=>[col,r[i]??''])));format='csv';}
+  else if(ext.endsWith('.xlsm')||ext.endsWith('.xlsx')){
+    const wb=await openWorkbook(file);let lastError=null;
+    for(const name of [...wb.sheets.keys()].slice(0,8)){
+      const test=[];
+      try{await sheetRows(wb,[name],r=>test.push(r),{detectInventory:true});
+       if(!test.some(r=>/^[0-9]{5,8}$/.test(String(r.SAP??r['Código SAP']??'').trim())))continue;
+       // Metadata del encabezado, p. ej. «Generado: 8/11/2026».
+       date=await getXlsxInventoryDate(wb,name);rows=test;format='xlsx';break;
+      }catch(e){lastError=e;}
+    }
+    if(!rows)throw lastError||Error('No se encontró una hoja de inventario con SAP y piezas.');
+  }else throw Error('Formato de inventario no compatible; selecciona PDF, XLS, XLSX, XLSM o CSV.');
+  if(!rows?.length)throw Error('No hay artículos en el inventario. No se modificaron tus datos anteriores.');
+  info=normalizeInventoryRows(rows);
+  const fallback=date||Core.orderDay(state.settings);
+  state.data.inventoryDate=fallback;
+  state.data.inventoryGenerated=date?date+'T00:00:00':new Date().toISOString();
+  state.data.inventoryFilename=file.name;
+  state.data.inventoryFormat=format;
+  scheduleSave();render();
+  const caution=state.data.inventory.filter(i=>i.stockNeedsReview).length;
+  toast(`Inventario cargado: ${info.total} SAP · conteo ${fallback}. ${caution?caution+' conversiones por confirmar.':''}`);
+}
+
 async function uploadTransit(file){
  if(!haveData())throw Error('Carga el inventario antes de agregar artículos en tránsito.');
  if(!file.name.toLowerCase().endsWith('.pdf'))throw Error('El tránsito solo admite PDF por ahora.');
@@ -1248,7 +1501,7 @@ async function exportXlsx(){if(!haveData()){toast('Primero carga el inventario.'
       ['Recepción: '+(state.settings.receiptDate||'sin elegir')+' · Próxima entrega: '+Core.nextDelivery(state.settings.receiptDate||date,state.settings.deliveryWeekdays)],
       ['Conteo: '+state.data.inventoryDate+' · Seguridad: '+Math.max(0,Number(state.settings.safetyDays??1))+' día(s) · Variación de demanda: '+(state.settings.demandAdjustment||0)+'%. Validar SAP, stock, múltiplos y fechas de tránsito.'],
       ['Proveedor','SAP','Producto','Familia','Unidad de pedido','Stock inicial','Entradas recibidas (PZA)','En tránsito PZA del horizonte','Tránsito hasta recepción PZA','Tránsito posterior PZA','Stock proyectado a recibir','Consumo base por día','Consumo ajustado por día','Seguridad (días)','Necesario al final de cobertura','Cantidad a solicitar','Múltiplo de compra','Origen','Revisión visual','Nota']];
-    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([supplierName(r.supplier),r.item.sap,r.item.name,r.item.family,r.unit,r.stock,r.receivedActivePieces,r.transit.activePieces,r.transit.beforePieces,r.transit.laterPieces,r.position,r.baseDaily,r.daily,Math.max(0,Number(state.settings.safetyDays??1)),r.required,r.order,r.multiple,r.source==='manual'?'Manual':'Motor 02',r.reviewed?'Sí':'No',r.override.note||'']);
+    for(const r of rows.filter(x=>x.ready&&x.order>0))sheet1.push([supplierName(r.supplier),r.item.sap,r.item.name,r.item.family,r.unit,r.stock,r.receivedActivePieces,r.transit.activePieces,r.transit.beforePieces,r.transit.laterPieces,r.position,r.baseDaily,r.daily,Math.max(0,Number(state.settings.safetyDays??1)),r.required,r.order,r.multiple,r.source==='manual'?'Manual':r.source==='excel-alterno'?'Excel alterno':'Motor 02',r.reviewed?'Sí':'No',r.override.note||'']);
     const sheet2=[['Proveedor','SAP','Producto','Familia','Stock inicial','Unidad','Uso diario base','Variación global (%)','Uso diario ajustado','Mínimo','Máximo','Cobertura días','Tránsito total PZA','Tránsito horizonte PZA','Stock a recepción','Fecha de recepción','Próxima entrega','Pedido (puede ser provisional)','Estado','Revisión','Motivo pendiente']];
     const sheet3=[['Proveedor','SAP','Producto','Fecha','Uso de Motor 02 (sin ajuste global)','Unidad','Origen','ID de uso']];
     const sheet4=[['Proveedor','SAP','Producto','Cantidad provisional','Razón pendiente','Revisión','ID uso propuesto','Confianza nombre']];
@@ -1284,8 +1537,15 @@ function init(){restore();render();$('transitManualDate').value=todayLocal();
     await new Promise(resolve=>setTimeout(resolve,40));
     try{await uploadMotor(id,f);}catch(err){console.error(err);sourceStatus();toast('Motor '+id+': '+err.message);}e.target.value='';});
   $('invInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await uploadInventory(f);}catch(err){console.error(err);toast('Inventario: '+err.message);}e.target.value='';});
+  $('supplementBtn').addEventListener('click',()=>{$('supplementInput').click();});
+  $('supplementInput').addEventListener('change',async e=>{
+    const f=e.target.files?.[0];if(!f)return;
+    $('supplementBtn').disabled=true;$('supplementBtn').textContent='Procesando Excel…';
+    try{await uploadSupplement(f);}catch(err){console.error(err);toast('Uso alterno: '+err.message);}
+    finally{$('supplementBtn').disabled=false;$('supplementBtn').textContent='↥ Cargar usos alternos';e.target.value='';}
+  });
   $('backupBtn').addEventListener('click',saveBackup);$('exportBtn').addEventListener('click',exportXlsx);$('printBtn').addEventListener('click',()=>{if(!haveData()){toast('Carga primero los datos iniciales.');return;}window.print();});
-  $('helpBtn').addEventListener('click',()=>toast('Carga los tres motores e inventario, configura entregas y, si aplica, artículos en tránsito. Haz clic en los encabezados para ordenar.'));
+  $('helpBtn').addEventListener('click',()=>toast('Carga primero el inventario y luego los motores. Si hay usos en cero, arriba puedes cargar un Excel alterno con SAP y Promedio; configura entregas y tránsito. Haz clic en los encabezados para ordenar.'));
   $('toggleTransit').addEventListener('click',()=>{const hidden=$('transitContent').classList.toggle('hidden');$('toggleTransit').textContent=hidden?'Mostrar tránsito ⌄':'Ocultar tránsito ⌃';});
   $('transitInput').addEventListener('change',async e=>{for(const f of [...e.target.files]){try{await uploadTransit(f);}catch(err){console.error(err);toast('Tránsito '+f.name+': '+err.message);}}e.target.value='';});
   $('addTransitManual').addEventListener('click',addTransitManual);
@@ -1294,7 +1554,7 @@ function init(){restore();render();$('transitManualDate').value=todayLocal();
   $('receivedInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await importReceived(f);}catch(err){console.error(err);toast('Recibidos: '+err.message);}e.target.value='';});
   $('resetConfigBtn').addEventListener('click',()=>{state.settings={...Core.DEFAULTS,deliveryWeekdays:[...Core.DEFAULTS.deliveryWeekdays],supplierFilter:state.settings.supplierFilter};scheduleSave();render();toast('Calendario restablecido.');});
   function doClear(kind){
-    const options={motors:'¿Borrar los tres motores? Se conservarán inventario, tránsito, recibidos y consumos manuales.',inventory:'¿Borrar TODOS los artículos y stocks del inventario? Los motores y documentos de tránsito se conservarán.',transit:'¿Borrar todos los pedidos en tránsito?',received:'¿Borrar todas las entradas ya recibidas?',uses:'¿Borrar TODOS los usos diarios? Se eliminará el historial del Motor 02 y los consumos capturados manualmente; vuelve a importar el Motor 02 para restaurarlos.',all:'¿BORRAR TODO? Se eliminarán todos los datos y configuraciones guardados en este navegador.'};
+    const options={motors:'¿Borrar los tres motores? Se conservarán inventario, tránsito, recibidos y consumos manuales.',inventory:'¿Borrar TODOS los artículos y stocks del inventario? Los motores y documentos de tránsito se conservarán.',transit:'¿Borrar todos los pedidos en tránsito?',supplement:'¿Borrar únicamente el Excel alterno de usos diarios? Los motores y usos manuales se conservarán.',received:'¿Borrar todas las entradas ya recibidas?',uses:'¿Borrar TODOS los usos diarios? Se eliminará el historial del Motor 02 y los consumos capturados manualmente; vuelve a importar el Motor 02 para restaurarlos.',all:'¿BORRAR TODO? Se eliminarán todos los datos y configuraciones guardados en este navegador.'};
     if(!confirm(options[kind]))return;
     if(kind==='all'){
       clearTimeout(scheduleSave._timer);try{localStorage.removeItem(LS);localStorage.removeItem('woe-pedidos-local-v1');}catch(e){}
@@ -1307,10 +1567,11 @@ function init(){restore();render();$('transitManualDate').value=todayLocal();
       state.data.inventory=[];state.data.inventoryDate='';state.data.inventoryGenerated='';state.data.inventoryFilename='';state.overrides={};filter.family.clear();
     }else if(kind==='transit'){state.data.transitDocs=[];for(const o of Object.values(state.overrides)){delete o.inbound;delete o.reviewed;delete o.reviewSignature;}}
     else if(kind==='received'){state.data.receivedDocs=[];}
-    else if(kind==='uses'){state.data.motor02={...state.data.motor02,asOf:'',file:'',usage:[]};for(const o of Object.values(state.overrides)){delete o.manual;delete o.reviewed;delete o.reviewSignature;}}
+    else if(kind==='supplement'){state.data.supplementaryUsage={file:'',bySap:{},info:{}};}
+    else if(kind==='uses'){state.data.supplementaryUsage={file:'',bySap:{},info:{}};state.data.motor02={...state.data.motor02,asOf:'',file:'',usage:[]};for(const o of Object.values(state.overrides)){delete o.manual;delete o.reviewed;delete o.reviewSignature;}}
     reindex();scheduleSave();render();switchView('pedido');toast('Datos eliminados: '+kind+'.');
   }
-  for(const [id,kind] of [['clearMotors','motors'],['clearInventory','inventory'],['clearTransit','transit'],['clearReceived','received'],['clearUses','uses'],['resetAllBtn','all']])$(id).addEventListener('click',()=>doClear(kind));
+  for(const [id,kind] of [['clearMotors','motors'],['clearInventory','inventory'],['clearTransit','transit'],['clearReceived','received'],['clearUses','uses'],['clearSupplement','supplement'],['resetAllBtn','all']])$(id).addEventListener('click',()=>doClear(kind));
   document.querySelectorAll('#deliveryDays input').forEach(box=>box.addEventListener('change',()=>{
     state.settings.deliveryWeekdays=[...document.querySelectorAll('#deliveryDays input:checked')].map(x=>Number(x.value));
     state.settings.receiptDate='';scheduleSave();render();
